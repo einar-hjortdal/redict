@@ -2,7 +2,7 @@ Module{
 	name: 'redict'
 	description: 'Redict library for the V language'
 	repo_url: 'https://github.com/einat-hjortdal/redict'
-	version: '3.0.0'
+	version: '3.0.1'
 	license: 'NCSA'
 	dependencies: []
 	vcs: 'git'

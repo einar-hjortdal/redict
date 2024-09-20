@@ -1,3 +1,3 @@
-module redis
+module redict
 
 interface Any {}

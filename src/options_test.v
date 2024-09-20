@@ -1,4 +1,4 @@
-module redis
+module redict
 
 fn setup_options() Options {
 	mut opts := Options{}

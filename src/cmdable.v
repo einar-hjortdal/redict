@@ -1,4 +1,4 @@
-module redis
+module redict
 
 import arrays
 import time

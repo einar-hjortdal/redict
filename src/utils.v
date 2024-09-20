@@ -1,4 +1,4 @@
-module redis
+module redict
 
 fn to_lower(s string) string {
 	if s.is_lower() {

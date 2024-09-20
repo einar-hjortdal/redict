@@ -1,4 +1,4 @@
-module redis
+module redict
 
 import pool.proto
 // import time
