@@ -1,0 +1,3 @@
+module redis
+
+interface Any {}
