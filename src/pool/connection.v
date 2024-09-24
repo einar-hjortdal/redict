@@ -23,8 +23,8 @@ fn new_connection(connection net.TcpConn) &Connection {
 		connection: connection
 		// id: rand.uuid_v4()
 		created_at: time.now()
-		reader: proto.new_reader(connection)
-		writer: proto.new_writer(connection)
+		reader:     proto.new_reader(connection)
+		writer:     proto.new_writer(connection)
 	}
 	return new
 }

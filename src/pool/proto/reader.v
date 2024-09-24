@@ -24,7 +24,7 @@ mut:
 pub fn new_reader(io_reader io.Reader) Reader {
 	return Reader{
 		reader: io_reader
-		buf: []u8{len: 4096, cap: 4096}
+		buf:    []u8{len: 4096, cap: 4096}
 		mfails: 2
 	}
 }

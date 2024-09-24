@@ -14,7 +14,7 @@ mut:
 
 pub fn new_writer(io_writer io.Writer) Writer {
 	return Writer{
-		writer: io_writer
+		writer:  io_writer
 		buf_len: []u8{len: 64, cap: 64}
 		buf_num: []u8{len: 64, cap: 64}
 	}

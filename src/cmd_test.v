@@ -63,7 +63,7 @@ fn test_expire() {
 fn setup_stateful_cmdable_client() &Client {
 	// Typical settings used by peony
 	mut opts := Options{
-		address: 'localhost:29400'
+		address:  'localhost:29400'
 		password: 'aed3261756c78a862013ac9a4f0d31dc1451a25a79653ff3951a2343f33245e8'
 	}
 	return new_client(mut opts)

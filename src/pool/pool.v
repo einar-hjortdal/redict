@@ -55,11 +55,11 @@ mut:
 
 pub fn new_connection_pool(opts Options) &ConnectionPool {
 	mut new := &ConnectionPool{
-		opts: opts
-		queue: chan int{cap: opts.pool_size}
-		connections: []&Connection{}
+		opts:             opts
+		queue:            chan int{cap: opts.pool_size}
+		connections:      []&Connection{}
 		idle_connections: []&Connection{}
-		mutex: sync.new_mutex()
+		mutex:            sync.new_mutex()
 	}
 
 	new.mutex.@lock()
@@ -272,7 +272,7 @@ mut:
 
 pub fn new_single_connection_pool(pool Pooler, connection &Connection) &SingleConnectionPool {
 	return &SingleConnectionPool{
-		pool: pool
+		pool:       pool
 		connection: connection
 	}
 }

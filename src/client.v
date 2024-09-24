@@ -137,7 +137,7 @@ pub fn new_client(mut options Options) &Client {
 
 	mut c := &Client{
 		BaseClient: BaseClient{
-			options: options
+			options:         options
 			connection_pool: new_connection_pool(options)
 		}
 	}
@@ -169,7 +169,7 @@ pub struct Connection {
 fn new_connection(options Options, connection_pool &pool.Pooler) &Connection {
 	mut c := &Connection{
 		BaseClient: BaseClient{
-			options: options
+			options:         options
 			connection_pool: connection_pool
 		}
 	}
