@@ -32,10 +32,11 @@ mut:
 */
 
 pub struct Options {
-	dialer               fn () !&net.TcpConn = unsafe { nil }
-	pool_size            int
 	min_idle_connections int
 	max_idle_connections int
+pub:
+	dialer    fn () !&net.TcpConn = unsafe { nil }
+	pool_size int
 }
 
 pub struct ConnectionPool {

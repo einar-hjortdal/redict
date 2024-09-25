@@ -27,10 +27,9 @@ Please follow these standards
 - No enums.
 - No logical assignment operators.
 - No static methods.
-- No `@[required]` attribute in struct definitions, always manually check values to return adequate 
-  error messages.
-- For consistency, use `arrays.concat` over `<<` to concatenate items to an array.
-- Always use `fn (a int, b int) bool { return a > b }` over `|a, b| a > b`
+- No lambdas.
+- No `@[required]` attribute in struct definitions.
+- Use `arrays.concat` instead of `<<`.
 
 ### FirebirdSQL
 

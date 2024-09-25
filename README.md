@@ -13,7 +13,7 @@ Redict library for the V language.
 Install with `v install einar-hjortdal.redict`
 
 ```V
-import einar-hjortdal.redict
+import einar_hjortdal.redict
 
 // Configure.
 mut ro := redict.Options{
@@ -32,9 +32,7 @@ result = client.get('test_key')!
 println(result.val())
 ```
 
-## Notes
-
-### Objectives 
+## Objectives 
 
 - Provide a driver for [Redict](https://redict.io/)
 - Support all [Redict commands](https://redict.io/docs/commands/)
@@ -44,7 +42,19 @@ println(result.val())
 
 - Support [features not supported by Redict](https://redict.io/docs/redis-compat/)
 
-### Contributing
+## Development
 
-Pull requests are very welcome. Please look at [CONTRIBUTING.md](./CONTRIBUTING.md) and at [TODO.md](./TODO.md) 
-files. Open issues for problems you encounter, reach out to me and the other contributors on [V's Discord](https://discord.gg/vlang).
+- [Issues](https://github.com/einar-hjortdal/redict/issues)
+- [TODO.md](./TODO.md)
+- [CONTRIBUTING.md](./CONTRIBUTING.md)
+
+```bash
+# Start a Redict container
+podman run \
+  --rm \
+  --detach \
+  --name=redict \
+  --tz=local \
+  --publish=6379:6379 \
+  registry.redict.io/redict
+```
