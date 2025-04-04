@@ -50,11 +50,10 @@ println(result.val())
 
 ```bash
 # Start a Redict container
-podman run \
+sudo docker run \
   --rm \
   --detach \
   --name=redict \
-  --tz=local \
   --publish=6379:6379 \
   registry.redict.io/redict
 ```
