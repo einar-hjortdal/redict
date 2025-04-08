@@ -7,12 +7,10 @@
 
 ## Throughout
 
-- Eliminate `json2.Any`, replace with empty interface or sum type.
+- Eliminate `json2.Any`, replace with empty interface
 - Add tests
-- Add context
 - Add logger
-- Use more `&Struct`
-- Define most structs as `[heap]`
+- Verify structs are being passed by reference when needed
 
 ## Options
 
@@ -43,11 +41,10 @@
 
 ## Cmdable
 
-- Add `do` API to issue unsupported commands
 - Support all commands listed [here](https://redict.io/docs/commands)
+- Add `do` API to issue unsupported commands
 - `get` should return a `nil` result instead of an error when `key` does not exist. At the moment, Cmdable 
-  returns an error with a string `'nil'`. It would be better to have a dedicated property for nil results. 
-  Create custom error type or return a struct with `nil` property.
+  returns an error with a string `'nil'`. It would be better to return the struct `Nil`. 
 - Gracefully handle errors when issuing commands on a server that requires authentication while not 
   being authenticated.
 
@@ -58,5 +55,3 @@
 - `big number` can be parsed to `big.Integer`
 
 ### Writer
-
-- Eliminate `json2.Any`
