@@ -110,6 +110,16 @@ pub fn (c Cmdable) set(key string, value string, expiration time.Duration) !&Sta
 	return cmd
 }
 
+pub fn (c Cmdable) hset(key string, values json.Any) !&IntCmd {
+	mut args := []json.Any{}
+	args << 'hset'
+	args << key
+	args = hset_append(args, values)!
+	cmd := new_int_cmd(...args)
+	c.cmdable_function(cmd)!
+	return cmd
+}
+
 /*
 *
 *

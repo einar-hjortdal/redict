@@ -1,6 +1,7 @@
 module redict
 
 import time
+import x.json2 as json
 
 /*
 *
@@ -49,6 +50,20 @@ fn test_expire() {
 	assert get_res.err() == 'nil'
 }
 
+fn test_hset() {
+	client := setup_cmdable_client()
+	a := [json.Any('some key'), 'some value', 'last key', 'last value']
+	mut hset_res := client.hset('test_key', a)!
+
+	h := json.map_from({
+		'zero': 'line zero'
+		'one':  'line one'
+		'two':  'line two'
+	})
+	// TODO fix test?
+	hset_res = client.hset('test_key', h)! // -WRONGTYPE Operation against a key holding the wrong kind of value
+}
+
 /*
 *
 *
@@ -61,9 +76,8 @@ fn test_expire() {
 // All related tests should go here
 
 fn setup_stateful_cmdable_client() &Client {
-	// Typical settings used by peony
 	mut opts := Options{
-		address:  'localhost:29400'
+		address:  'localhost:6379'
 		password: 'aed3261756c78a862013ac9a4f0d31dc1451a25a79653ff3951a2343f33245e8'
 	}
 	return new_client(mut opts)
