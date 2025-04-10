@@ -13,7 +13,7 @@ import sync
  *
 */
 
-interface Pooler {
+pub interface Pooler {
 mut:
 	new_connection() !&Connection
 	close_connection(mut Connection) !
