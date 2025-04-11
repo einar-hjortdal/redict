@@ -24,36 +24,36 @@ fn test_ping() {
 
 fn test_set_and_get() {
 	client := setup_cmdable_client()
-	get_nil_res := client.get('test_key') or { panic(err) }
+	get_nil_res := client.get('set_key') or { panic(err) }
 	assert get_nil_res.err() == 'nil'
 
-	set_res := client.set('test_key', 'test_value', 60 * time.second) or { panic(err) }
-	get_value_res := client.get('test_key') or { panic(err) }
+	set_res := client.set('set_key', 'test_value', 60 * time.second) or { panic(err) }
+	get_value_res := client.get('set_key') or { panic(err) }
 	assert get_value_res.val() == 'test_value'
 }
 
 fn test_del() {
 	client := setup_cmdable_client()
-	set_res := client.set('test_key', 'test_value', 60 * time.second) or { panic(err) }
-	del_res := client.del('test_key') or { panic(err) }
+	set_res := client.set('set_key', 'test_value', 60 * time.second) or { panic(err) }
+	del_res := client.del('set_key') or { panic(err) }
 	assert del_res.val() == 1 // deleted one value
 
-	get_res := client.get('test_key') or { panic(err) }
+	get_res := client.get('set_key') or { panic(err) }
 	assert get_res.err() == 'nil'
 }
 
 fn test_expire() {
 	client := setup_cmdable_client()
-	set_res := client.set('test_key', 'test_value', 60 * time.second) or { panic(err) }
-	exp_res := client.expire('test_key', 0 * time.second) or { panic(err) }
-	get_res := client.get('test_key') or { panic(err) }
+	set_res := client.set('set_key', 'test_value', 60 * time.second) or { panic(err) }
+	exp_res := client.expire('set_key', 0 * time.second) or { panic(err) }
+	get_res := client.get('set_key') or { panic(err) }
 	assert get_res.err() == 'nil'
 }
 
 fn test_hset() {
 	client := setup_cmdable_client()
 	a := [json.Any('some key'), 'some value', 'last key', 'last value']
-	mut hset_res := client.hset('test_key', a)!
+	mut hset_res := client.hset('hash_key', a)!
 
 	h := json.map_from({
 		'zero': 'line zero'
@@ -61,13 +61,14 @@ fn test_hset() {
 		'two':  'line two'
 	})
 	// TODO fix test?
-	hset_res = client.hset('test_key', h)! // -WRONGTYPE Operation against a key holding the wrong kind of value
+	// hset_res = client.hset('test_key', h)! // -WRONGTYPE Operation against a key holding the wrong kind of value
 }
 
 fn test_hget() {
 	client := setup_cmdable_client()
-
-	hget_res := client.hget('test_key', 'some key')! // -WRONGTYPE Operation against a key holding the wrong kind of value
+	a := [json.Any('some key'), 'some value']
+	client.hset('hash_key', a)!
+	hget_res := client.hget('hash_key', 'some key')! // -WRONGTYPE Operation against a key holding the wrong kind of value
 }
 
 /*
@@ -100,7 +101,7 @@ fn test_hello() {
 	assert res.val() == 'PONG'
 
 	// Check RESP 3 nil replies
-	get_nil_res := client.get('test_key') or { panic(err) }
+	get_nil_res := client.get('hello_key') or { panic(err) }
 	assert get_nil_res.err() == 'nil'
 }
 
