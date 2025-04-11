@@ -69,6 +69,7 @@ fn test_hget() {
 	a := [json.Any('some key'), 'some value']
 	client.hset('hash_key', a)!
 	hget_res := client.hget('hash_key', 'some key')! // -WRONGTYPE Operation against a key holding the wrong kind of value
+	assert hget_res.val() == 'some value'
 }
 
 /*
