@@ -64,6 +64,12 @@ fn test_hset() {
 	hset_res = client.hset('test_key', h)! // -WRONGTYPE Operation against a key holding the wrong kind of value
 }
 
+fn test_hget() {
+	client := setup_cmdable_client()
+
+	hget_res := client.hget('test_key', 'some key')! // -WRONGTYPE Operation against a key holding the wrong kind of value
+}
+
 /*
 *
 *

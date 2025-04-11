@@ -91,6 +91,12 @@ pub fn (c Cmdable) get(key string) !&StringCmd {
 	return cmd
 }
 
+pub fn (c Cmdable) hget(key string, index string) !&StringCmd {
+	cmd := new_string_cmd('hget', key, index)
+	c.cmdable_function(cmd)!
+	return cmd
+}
+
 // set issues a `SET key value [expiration]` command.
 // Zero expiration means the key has no expiration time.
 pub fn (c Cmdable) set(key string, value string, expiration time.Duration) !&StatusCmd {
