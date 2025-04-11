@@ -61,14 +61,14 @@ fn test_hset() {
 		'two':  'line two'
 	})
 	// TODO fix test?
-	// hset_res = client.hset('test_key', h)! // -WRONGTYPE Operation against a key holding the wrong kind of value
+	// hset_res = client.hset('test_key', h)!
 }
 
 fn test_hget() {
 	client := setup_cmdable_client()
 	a := [json.Any('some key'), 'some value']
 	client.hset('hash_key', a)!
-	hget_res := client.hget('hash_key', 'some key')! // -WRONGTYPE Operation against a key holding the wrong kind of value
+	hget_res := client.hget('hash_key', 'some key')!
 	assert hget_res.val() == 'some value'
 }
 
