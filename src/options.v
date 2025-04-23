@@ -2,7 +2,6 @@ module redict
 
 import runtime
 import net
-import pool
 
 pub struct Options {
 mut:
@@ -48,12 +47,12 @@ fn new_dialer(opts Options) fn (address string) !&net.TcpConn {
 	}
 }
 
-fn new_connection_pool(opts Options) &pool.ConnectionPool {
-	pool_opts := &pool.Options{
+fn private_new_connection_pool(opts Options) &ConnectionPool {
+	pool_opts := &PoolOptions{
 		dialer:    fn [opts] () !&net.TcpConn {
 			return opts.dialer(opts.address)
 		}
 		pool_size: opts.pool_size
 	}
-	return pool.new_connection_pool(pool_opts)
+	return new_connection_pool(pool_opts)
 }

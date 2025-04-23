@@ -1,4 +1,4 @@
-module proto
+module redict
 
 const resp_status = '+' // +<string>\r\n
 const resp_error = '-' // -<string>\r\n

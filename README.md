@@ -2,12 +2,6 @@
 
 Redict library for the V language.
 
-## Current features
-
-- RESP version 3
-- [Commands](src/cmdable.v)
-- Connection pool
-
 ## Usage
 
 Install with `v install einar-hjortdal.redict`

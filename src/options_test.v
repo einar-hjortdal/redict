@@ -8,13 +8,13 @@ fn setup_options() Options {
 
 fn test_new_connection_pool() {
 	opts := setup_options()
-	mut pool := new_connection_pool(opts)
+	mut pool := private_new_connection_pool(opts)
 	pool.close() or { panic(err) }
 }
 
 fn test_pool_get() {
 	opts := setup_options()
-	mut pool := new_connection_pool(opts)
+	mut pool := private_new_connection_pool(opts)
 	conn := pool.get() or { panic(err) }
 	pool.close() or { panic(err) }
 }

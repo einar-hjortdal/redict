@@ -1,74 +1,33 @@
 module redict
 
-import pool.proto
 // import time
-import x.json2 as json
-
-/*
-*
-*
-* Cmder
-*
-*
-*/
 
 pub interface Cmder {
 	name() string
 	full_name() string
-	args() []json.Any
-	cmd_string() string
+	args() []Value
 	arg_string(int) string
 	first_key_pos() int
+	val() Value
 	// read_timeout() time.Duration
-	err() string
 mut:
 	set_first_key_pos(int)
-	read_reply(mut rd proto.Reader) !
-	set_err(string)
+	read_reply(mut rd ProtoReader) !
 }
 
-fn write_cmds(mut wr proto.Writer, cmds []Cmder) ! {
+fn write_cmds(mut wr ProtoWriter, cmds []Cmder) ! {
 	for cmd in cmds {
 		write_cmd(mut wr, cmd)!
 	}
 }
 
-fn write_cmd(mut wr proto.Writer, cmd Cmder) ! {
+fn write_cmd(mut wr ProtoWriter, cmd Cmder) ! {
 	wr.write_args(cmd.args())!
 }
 
-fn cmd_string(cmd Cmder, val json.Any) string {
-	mut b := ''
-
-	for i, arg in cmd.args() {
-		if i > 0 {
-			b += ' '
-		}
-		b += '${arg}'
-	}
-
-	e := cmd.err()
-	if e != '' {
-		b += ': ${e}'
-	} else if val !is json.Null {
-		b += ': ${val}'
-	}
-
-	return b
-}
-
-/*
-*
-*
-* BaseCmd
-*
-*
-*/
-
 struct BaseCmd {
-	args []json.Any
+	args []Value
 mut:
-	err     string
 	key_pos int
 }
 
@@ -97,7 +56,7 @@ pub fn (cmd BaseCmd) full_name() string {
 	}
 }
 
-pub fn (cmd BaseCmd) args() []json.Any {
+pub fn (cmd BaseCmd) args() []Value {
 	return cmd.args
 }
 
@@ -108,7 +67,7 @@ fn (cmd BaseCmd) arg_string(pos int) string {
 	arg := cmd.args[pos]
 	match arg {
 		string {
-			return arg
+			return *arg
 		}
 		else {
 			return '${arg}'
@@ -124,35 +83,11 @@ fn (mut cmd BaseCmd) set_first_key_pos(key_pos int) {
 	cmd.key_pos = key_pos
 }
 
-fn (mut cmd BaseCmd) set_err(e string) {
-	cmd.err = e
-}
-
-pub fn (cmd BaseCmd) err() string {
-	return cmd.err
-}
-
-/*
-*
-*
-* Cmd
-*
-*
-*/
-
 struct Cmd {
 	BaseCmd
 mut:
-	val json.Any
+	val Value
 }
-
-/*
-*
-*
-* IntCmd
-*
-*
-*/
 
 pub struct IntCmd {
 	BaseCmd
@@ -160,7 +95,7 @@ mut:
 	val i64
 }
 
-fn new_int_cmd(args ...json.Any) &IntCmd {
+fn new_int_cmd(args ...Value) &IntCmd {
 	return &IntCmd{
 		BaseCmd: BaseCmd{
 			args: args
@@ -168,90 +103,52 @@ fn new_int_cmd(args ...json.Any) &IntCmd {
 	}
 }
 
-pub fn (cmd IntCmd) val() i64 {
-	return cmd.val
-}
-
 fn (mut cmd IntCmd) set_val(val i64) {
 	cmd.val = val
 }
 
-fn (cmd IntCmd) result() !i64 {
-	if cmd.val != 0 {
-		return cmd.val
-	} else {
-		return error(cmd.err)
-	}
+fn (cmd IntCmd) val() Value {
+	return cmd.val
 }
 
-fn (cmd IntCmd) cmd_string() string {
-	return cmd_string(cmd, cmd.val)
-}
-
-fn (mut cmd IntCmd) read_reply(mut rd proto.Reader) ! {
-	cmd.val = rd.read_int()!
-}
-
-/*
-*
-*
-* StatusCmd
-*
-*
-*/
-
-pub struct StatusCmd {
-	BaseCmd
-mut:
-	val string
-}
-
-fn new_status_cmd(args ...json.Any) &StatusCmd {
-	return &StatusCmd{
-		BaseCmd: BaseCmd{
-			args: args
+fn (mut cmd IntCmd) read_reply(mut rd ProtoReader) ! {
+	v := rd.read_int()!
+	match v {
+		i64 {
+			cmd.val = v
+		}
+		else {
+			return RedictError{
+				msg: format_error_message('IntCmd.read_reply: ProtoReader.read_int returned unexpected type')
+			}
 		}
 	}
 }
 
-pub fn (cmd StatusCmd) val() string {
-	return cmd.val
+pub struct StatusCmd {
+	BaseCmd
+mut:
+	val Value
+}
+
+fn new_status_cmd(args ...Value) &StatusCmd {
+	return &StatusCmd{
+		args: args
+		val:  Nil{}
+	}
 }
 
 fn (mut cmd StatusCmd) set_val(val string) {
 	cmd.val = val
 }
 
-fn (cmd StatusCmd) result() !string {
-	if cmd.val != '' {
-		return cmd.val
-	} else {
-		return error(cmd.err)
-	}
+fn (cmd StatusCmd) val() Value {
+	return cmd.val
 }
 
-fn (cmd StatusCmd) cmd_string() string {
-	return cmd_string(cmd, cmd.val)
+fn (mut cmd StatusCmd) read_reply(mut rd ProtoReader) ! {
+	cmd.val = rd.read_string()!
 }
-
-fn (mut cmd StatusCmd) read_reply(mut rd proto.Reader) ! {
-	cmd.val = rd.read_string() or {
-		if err.msg() == 'nil' {
-			cmd.err = 'nil'
-			return
-		} else {
-			return err
-		}
-	}
-}
-
-/*
-*
-*
-* BoolCmd
-*
-*
-*/
 
 struct BoolCmd {
 	BaseCmd
@@ -259,7 +156,7 @@ mut:
 	val bool
 }
 
-fn new_bool_cmd(args ...json.Any) &BoolCmd {
+fn new_bool_cmd(args ...Value) &BoolCmd {
 	return &BoolCmd{
 		BaseCmd: BaseCmd{
 			args: args
@@ -271,142 +168,91 @@ fn (mut cmd BoolCmd) set_val(val bool) {
 	cmd.val = val
 }
 
-pub fn (cmd BoolCmd) val() bool {
+fn (cmd BoolCmd) val() Value {
 	return cmd.val
 }
 
-fn (cmd BoolCmd) result() !bool {
-	if cmd.val != false { // TODO this function should only return the val if command issued without error
-		return cmd.val
-	} else {
-		return error(cmd.err)
-	}
-}
-
-fn (cmd BoolCmd) cmd_string() string {
-	return cmd_string(cmd, cmd.val)
-}
-
-fn (mut cmd BoolCmd) read_reply(mut rd proto.Reader) ! {
+fn (mut cmd BoolCmd) read_reply(mut rd ProtoReader) ! {
 	cmd.val = rd.read_bool() or {
 		// `SET key value NX` returns nil when key already exists.
 		// `SETNX key value` returns bool (0/1). So convert nil to bool.
-		if err.msg() == 'nil' {
-			cmd.val = false
-		}
+		cmd.val = false // value is set false, and Nil is returned.
 		return err
 	}
 }
 
-/*
-*
-*
-* StringCmd
-*
-*
-*/
-
 pub struct StringCmd {
 	BaseCmd
 mut:
-	val string
+	val Value
 }
 
-fn new_string_cmd(args ...json.Any) &StringCmd {
+fn new_string_cmd(args ...Value) &StringCmd {
 	return &StringCmd{
-		BaseCmd: BaseCmd{
-			args: args
-		}
+		args: args
+		val:  Nil{}
 	}
-}
-
-pub fn (cmd StringCmd) val() string {
-	return cmd.val
 }
 
 fn (mut cmd StringCmd) set_val(val string) {
 	cmd.val = val
 }
 
-fn (cmd StringCmd) result() !string {
-	if cmd.val != '' {
-		return cmd.val
-	} else {
-		return error(cmd.err)
-	}
-}
-
-fn (cmd StringCmd) cmd_string() string {
-	return cmd_string(cmd, cmd.val)
-}
-
-fn (mut cmd StringCmd) read_reply(mut rd proto.Reader) ! {
-	cmd.val = rd.read_string() or {
-		if err.msg() == 'nil' {
-			cmd.err = 'nil'
-			return
-		} else {
-			return err
-		}
-	}
-}
-
-/*
-*
-*
-* MapStringInterfaceCmd
-*
-*
-*/
-
-struct MapStringInterfaceCmd {
-	BaseCmd
-mut:
-	val map[string]json.Any
-}
-
-fn new_map_string_interface_cmd(args ...json.Any) &MapStringInterfaceCmd {
-	return &MapStringInterfaceCmd{
-		BaseCmd: BaseCmd{
-			args: args
-		}
-	}
-}
-
-fn (mut cmd MapStringInterfaceCmd) set_val(mut val map[string]json.Any) {
-	cmd.val = val.move()
-}
-
-pub fn (cmd MapStringInterfaceCmd) val() map[string]json.Any {
+fn (cmd StringCmd) val() Value {
 	return cmd.val
 }
 
-fn (cmd MapStringInterfaceCmd) result() !map[string]json.Any {
-	if cmd.err != '' {
-		return error(cmd.err)
-	} else {
-		return cmd.val
+fn (mut cmd StringCmd) read_reply(mut rd ProtoReader) ! {
+	cmd.val = rd.read_string()!
+}
+
+struct MapStringValueCmd {
+	BaseCmd
+mut:
+	val map[string]Value
+}
+
+fn new_map_string_value_cmd(args ...Value) &MapStringValueCmd {
+	return &MapStringValueCmd{
+		args: args
 	}
 }
 
-fn (cmd MapStringInterfaceCmd) cmd_string() string {
-	return cmd_string(cmd, cmd.val)
+fn (mut cmd MapStringValueCmd) set_val(mut val map[string]Value) {
+	cmd.val = val.move()
 }
 
-fn (mut cmd MapStringInterfaceCmd) read_reply(mut rd proto.Reader) ! {
+fn (cmd MapStringValueCmd) val() Value {
+	return cmd.val
+}
+
+fn (mut cmd MapStringValueCmd) read_reply(mut rd ProtoReader) ! {
 	n := rd.read_map_len()!
-	cmd.val = map[string]json.Any{}
-	for i := 0; i < n; i += 1 {
-		// so far it works
-		k := rd.read_string()!
-		v := rd.read_reply() or {
-			if err.msg() == 'nil' {
-				cmd.val[k] = 'nil'
-				continue
+	match n {
+		int {
+			cmd.val = map[string]Value{}
+			for i := 0; i < n; i += 1 {
+				// so far it works
+				k := rd.read_string()!
+				match k {
+					string {
+						v := rd.read_reply() or {
+							cmd.val[k] = err as Value // error: cannot implement interface `redict.Value` with a different interface `IError`
+							continue
+							// if error is a protocol error, set cmd.val[k] as the error.
+						}
+						cmd.val[k] = v
+					}
+					else {
+						return error(format_error_message('MapStringValueCmd.read_reply: ProtoReader.read_string returned unexpect type'))
+					}
+				}
 			}
-			return err
 		}
-		cmd.val[k] = v
+		else {
+			return RedictError{
+				msg: format_error_message('MapStringValueCmd.read_reply: ProtoReader.read_map_len returned unexpect type')
+			}
+		}
 	}
-	return
 }

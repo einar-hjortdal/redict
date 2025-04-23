@@ -1,15 +1,6 @@
 module redict
 
 import time
-import x.json2 as json
-
-/*
-*
-*
-* Cmdable
-*
-*
-*/
 
 fn setup_cmdable_client() &Client {
 	mut opts := Options{}
@@ -18,70 +9,57 @@ fn setup_cmdable_client() &Client {
 
 fn test_ping() {
 	client := setup_cmdable_client()
-	res := client.ping() or { panic(err) }
-	assert res.val() == 'PONG'
+	r := client.ping()!
+	v := r.val()
+	assert v is string && v == 'PONG'
+}
+
+fn test_get_unset() {
+	client := setup_cmdable_client()
+	r := client.get('set_key')!
+	v := r.val()
+	assert v is Nil
 }
 
 fn test_set_and_get() {
 	client := setup_cmdable_client()
-	get_nil_res := client.get('set_key') or { panic(err) }
-	assert get_nil_res.err() == 'nil'
-
-	set_res := client.set('set_key', 'test_value', 60 * time.second) or { panic(err) }
-	get_value_res := client.get('set_key') or { panic(err) }
-	assert get_value_res.val() == 'test_value'
+	client.set('set_key', 'test_value', 60 * time.second)!
+	get_res := client.get('set_key')!
+	v := get_res.val()
+	assert v is string && v == 'test_value'
 }
 
 fn test_del() {
 	client := setup_cmdable_client()
-	set_res := client.set('set_key', 'test_value', 60 * time.second) or { panic(err) }
-	del_res := client.del('set_key') or { panic(err) }
-	assert del_res.val() == 1 // deleted one value
+	client.set('set_key', 'test_value', 60 * time.second)!
+	del_res := client.del('set_key')!
+	assert del_res.val() is i64 && del_res.val() == 1 // deleted one value
 
-	get_res := client.get('set_key') or { panic(err) }
-	assert get_res.err() == 'nil'
+	get_res := client.get('set_key')!
+	assert get_res.val() is Nil
 }
 
 fn test_expire() {
 	client := setup_cmdable_client()
-	set_res := client.set('set_key', 'test_value', 60 * time.second) or { panic(err) }
-	exp_res := client.expire('set_key', 0 * time.second) or { panic(err) }
-	get_res := client.get('set_key') or { panic(err) }
-	assert get_res.err() == 'nil'
+	client.set('set_key', 'test_value', 60 * time.second)!
+	client.expire('set_key', 0 * time.second)!
+	get_res := client.get('set_key')!
+	assert get_res.val() is Nil
 }
 
 fn test_hset() {
 	client := setup_cmdable_client()
-	a := [json.Any('some key'), 'some value', 'last key', 'last value']
-	mut hset_res := client.hset('hash_key', a)!
-
-	h := json.map_from({
-		'zero': 'line zero'
-		'one':  'line one'
-		'two':  'line two'
-	})
-	// TODO fix test?
-	// hset_res = client.hset('test_key', h)!
+	a := [Value('some key'), 'some value', 'last key', 'last value']
+	hset_res := client.hset('hash_key', a)!
 }
 
 fn test_hget() {
 	client := setup_cmdable_client()
-	a := [json.Any('some key'), 'some value']
+	a := [Value('some key'), 'some value']
 	client.hset('hash_key', a)!
 	hget_res := client.hget('hash_key', 'some key')!
-	assert hget_res.val() == 'some value'
+	assert hget_res.val() is string && hget_res.val() == 'some value'
 }
-
-/*
-*
-*
-* StatefulCmdable
-*
-*
-*/
-
-// The HELLO command sets the RESP version to 3.
-// All related tests should go here
 
 fn setup_stateful_cmdable_client() &Client {
 	mut opts := Options{
@@ -98,18 +76,10 @@ fn test_hello() {
 	client := setup_stateful_cmdable_client()
 
 	// Check authentication
-	mut res := client.ping() or { panic(err) }
-	assert res.val() == 'PONG'
+	mut res := client.ping()!
+	assert res.val() is string && res.val() == 'PONG'
 
 	// Check RESP 3 nil replies
-	get_nil_res := client.get('hello_key') or { panic(err) }
-	assert get_nil_res.err() == 'nil'
+	get_nil_res := client.get('hello_key')!
+	assert get_nil_res.val() is Nil
 }
-
-// TODO when trying to issue commands on a server that requires authentication, but username/password
-// are not provided in the options:
-// -NOAUTH HELLO must be called with the client already authenticated, otherwise the HELLO AUTH <user> <pass> option can be used to authenticate the client and select the RESP protocol version at the same time
-// -NOAUTH HELLO must be called with the client already authenticated, otherwise the HELLO AUTH <user> <pass> option can be used to authenticate the client and select the RESP protocol version at the same time
-// -NOAUTH HELLO must be called with the client already authenticated, otherwise the HELLO AUTH <user> <pass> option can be used to authenticate the client and select the RESP protocol version at the same time
-// -NOAUTH HELLO must be called with the client already authenticated, otherwise the HELLO AUTH <user> <pass> option can be used to authenticate the client and select the RESP protocol version at the same time
-// Invalid server response: response does not end with \n

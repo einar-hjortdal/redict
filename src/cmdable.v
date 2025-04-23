@@ -2,7 +2,6 @@ module redict
 
 import arrays
 import time
-import x.json2 as json
 
 fn use_precise(duration time.Duration) bool {
 	return duration < time.second || duration % time.second != 0
@@ -22,14 +21,6 @@ fn format_sec(duration time.Duration) i64 {
 	return i64(duration / time.second)
 }
 
-/*
-*
-*
-* Cmdable
-*
-*
-*/
-
 struct Cmdable {
 mut:
 	cmdable_function fn (cmd &Cmder) ! = unsafe { nil }
@@ -42,10 +33,10 @@ pub fn (c Cmdable) ping() !&StatusCmd {
 }
 
 pub fn (c Cmdable) del(keys ...string) !&IntCmd {
-	mut args := []json.Any{}
+	mut args := []Value{}
 	args << 'del'
 	for key in keys {
-		args << key
+		args = arrays.concat(args, key)
 	}
 	cmd := new_int_cmd(...args)
 	c.cmdable_function(cmd)!
@@ -73,7 +64,7 @@ pub fn (c Cmdable) expire_lt(key string, expiration time.Duration) !&BoolCmd {
 }
 
 fn (c Cmdable) private_expire(key string, expiration time.Duration, mode string) !&BoolCmd {
-	mut args := []json.Any{}
+	mut args := []Value{}
 	args << 'expire'
 	args << key
 	args << format_sec(expiration)
@@ -91,16 +82,10 @@ pub fn (c Cmdable) get(key string) !&StringCmd {
 	return cmd
 }
 
-pub fn (c Cmdable) hget(key string, index string) !&StringCmd {
-	cmd := new_string_cmd('hget', key, index)
-	c.cmdable_function(cmd)!
-	return cmd
-}
-
 // set issues a `SET key value [expiration]` command.
 // Zero expiration means the key has no expiration time.
 pub fn (c Cmdable) set(key string, value string, expiration time.Duration) !&StatusCmd {
-	mut args := []json.Any{}
+	mut args := []Value{}
 	args << 'set'
 	args << key
 	args << value
@@ -116,23 +101,21 @@ pub fn (c Cmdable) set(key string, value string, expiration time.Duration) !&Sta
 	return cmd
 }
 
-pub fn (c Cmdable) hset(key string, values json.Any) !&IntCmd {
-	mut args := []json.Any{}
+pub fn (c Cmdable) hset(key string, values []Value) !&IntCmd {
+	mut args := []Value{}
 	args << 'hset'
 	args << key
-	args = hset_append(args, values)!
+	args << values
 	cmd := new_int_cmd(...args)
 	c.cmdable_function(cmd)!
 	return cmd
 }
 
-/*
-*
-*
-* CmdableStateful
-*
-*
-*/
+pub fn (c Cmdable) hget(key string, index string) !&StringCmd {
+	cmd := new_string_cmd('hget', key, index)
+	c.cmdable_function(cmd)!
+	return cmd
+}
 
 struct CmdableStateful {
 mut:
@@ -151,8 +134,8 @@ pub fn (c CmdableStateful) auth_acl(username string, password string) !&StatusCm
 	return cmd
 }
 
-pub fn (c CmdableStateful) hello(protover int, username string, password string, client_name string) !&MapStringInterfaceCmd {
-	mut args := []json.Any{}
+pub fn (c CmdableStateful) hello(protover int, username string, password string, client_name string) !&MapStringValueCmd {
+	mut args := []Value{}
 	args = arrays.concat(args, 'hello', protover)
 	if password != '' {
 		if username != '' {
@@ -164,7 +147,7 @@ pub fn (c CmdableStateful) hello(protover int, username string, password string,
 	if client_name != '' {
 		args = arrays.concat(args, 'setname', client_name)
 	}
-	cmd := new_map_string_interface_cmd(...args)
+	cmd := new_map_string_value_cmd(...args)
 
 	c.cmdable_stateful_function(cmd)!
 	return cmd

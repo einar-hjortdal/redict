@@ -1,16 +1,17 @@
-import pool
+module redict
+
 import time
 
 // RUNTIME ERROR: invalid memory access
 // because pool.dial_connection attempts to use uninitialized pool.dialer
-fn new_opts() &pool.Options {
-	return &pool.Options{
+fn new_opts() &PoolOptions {
+	return &PoolOptions{
 		pool_size: 10
 	}
 }
 
-fn new_pool() &pool.ConnectionPool {
-	return pool.new_connection_pool(new_opts())
+fn new_pool() &ConnectionPool {
+	return new_connection_pool(new_opts())
 }
 
 fn test_unblock_when_conn_removed() {
@@ -20,7 +21,7 @@ fn test_unblock_when_conn_removed() {
 	mut cn := conn_pool.get()!
 
 	// reserve the rmaining connections
-	mut cns := []&pool.Connection{}
+	mut cns := []&PoolConnection{}
 	for i := 0; i < 9; i++ {
 		loop_cn := conn_pool.get()!
 		cns << loop_cn
@@ -29,7 +30,7 @@ fn test_unblock_when_conn_removed() {
 	started := chan bool{}
 	done := chan bool{}
 
-	spawn fn [mut conn_pool, mut cn, started, done] () ! {
+	go fn [mut conn_pool, mut cn, started, done] () ! {
 		started <- true
 		_ := conn_pool.get()!
 		done <- true

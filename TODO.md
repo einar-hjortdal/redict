@@ -7,7 +7,6 @@
 
 ## Throughout
 
-- Eliminate `json2.Any`, replace with empty interface
 - Add tests
 - Add logger
 - Verify structs are being passed by reference when needed
@@ -19,6 +18,7 @@
 
 ## Pool
 
+- Consider removing pool entirely and let user handle pooling
 - Add timeout
 - Max idle time
 - Max life time
@@ -43,15 +43,11 @@
 
 - Support all commands listed [here](https://redict.io/docs/commands)
 - Add `do` API to issue unsupported commands
-- `get` should return a `nil` result instead of an error when `key` does not exist. At the moment, Cmdable 
-  returns an error with a string `'nil'`. It would be better to return the struct `Nil`. 
 - Gracefully handle errors when issuing commands on a server that requires authentication while not 
   being authenticated.
 
-## Proto
-
-### Reader
+## Reader
 
 - `big number` can be parsed to `big.Integer`
 
-### Writer
+## Writer
