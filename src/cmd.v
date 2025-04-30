@@ -103,11 +103,7 @@ fn new_int_cmd(args ...Value) &IntCmd {
 	}
 }
 
-fn (mut cmd IntCmd) set_val(val i64) {
-	cmd.val = val
-}
-
-fn (cmd IntCmd) val() Value {
+pub fn (cmd IntCmd) val() Value {
 	return cmd.val
 }
 
@@ -138,11 +134,7 @@ fn new_status_cmd(args ...Value) &StatusCmd {
 	}
 }
 
-fn (mut cmd StatusCmd) set_val(val string) {
-	cmd.val = val
-}
-
-fn (cmd StatusCmd) val() Value {
+pub fn (cmd StatusCmd) val() Value {
 	return cmd.val
 }
 
@@ -164,11 +156,7 @@ fn new_bool_cmd(args ...Value) &BoolCmd {
 	}
 }
 
-fn (mut cmd BoolCmd) set_val(val bool) {
-	cmd.val = val
-}
-
-fn (cmd BoolCmd) val() Value {
+pub fn (cmd BoolCmd) val() Value {
 	return cmd.val
 }
 
@@ -194,11 +182,7 @@ fn new_string_cmd(args ...Value) &StringCmd {
 	}
 }
 
-fn (mut cmd StringCmd) set_val(val string) {
-	cmd.val = val
-}
-
-fn (cmd StringCmd) val() Value {
+pub fn (cmd StringCmd) val() Value {
 	return cmd.val
 }
 
@@ -218,11 +202,7 @@ fn new_map_string_value_cmd(args ...Value) &MapStringValueCmd {
 	}
 }
 
-fn (mut cmd MapStringValueCmd) set_val(mut val map[string]Value) {
-	cmd.val = val.move()
-}
-
-fn (cmd MapStringValueCmd) val() Value {
+pub fn (cmd MapStringValueCmd) val() Value {
 	return cmd.val
 }
 
