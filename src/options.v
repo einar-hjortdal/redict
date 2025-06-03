@@ -17,7 +17,7 @@ pub mut:
 	// db defaults to 0.
 	db int
 	// pool_size defaults to 10 connections per CPU thread.
-	// it represents the maximim number of connections in the pool.
+	// it represents the maximum number of connections in the pool.
 	pool_size int
 	// mind_idle_connections defaults to 0.
 	min_idle_connections int

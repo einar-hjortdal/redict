@@ -1,12 +1,10 @@
 module redict
 
 import net
-// import rand
 import time
 
 pub struct PoolConnection {
 pub:
-	// id         string
 	created_at time.Time
 mut:
 	connection net.TcpConn
@@ -20,7 +18,6 @@ pub mut:
 fn new_pool_connection(connection net.TcpConn) &PoolConnection {
 	new := &PoolConnection{
 		connection: connection
-		// id: rand.uuid_v4()
 		created_at: time.now()
 		reader:     new_reader(connection)
 		writer:     new_writer(connection)

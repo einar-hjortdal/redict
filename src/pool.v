@@ -97,10 +97,6 @@ fn (mut pool ConnectionPool) private_new_connection(pooled bool) !&PoolConnectio
 	mut connection := pool.dial_connection(pooled)!
 
 	pool.mutex.@lock()
-	defer {
-		pool.mutex.unlock()
-	}
-
 	pool.connections = arrays.concat(pool.connections, connection)
 	if pooled {
 		// If pool is full remove the connection on next put.
@@ -110,6 +106,8 @@ fn (mut pool ConnectionPool) private_new_connection(pooled bool) !&PoolConnectio
 			pool.pool_size += 1
 		}
 	}
+	pool.mutex.unlock()
+
 	return connection
 }
 
