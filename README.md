@@ -10,12 +10,12 @@ Install with `v install einar-hjortdal.redict`
 import einar_hjortdal.redict
 
 // Configure.
-mut ro := redict.Options{
-  // refer to the options.v file
+ro := redict.Options{
+  url: redict://user:pass@host:port/db // refer to the options.v file
 }
 
 // Create a new client.
-client := new_client(mut opts)
+client := new_client(opts)!
 
 // Issue commands as Client methods.
 // Supported commands are listed in the `cmdable.v` file.
