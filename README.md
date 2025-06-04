@@ -11,7 +11,7 @@ import einar_hjortdal.redict
 
 // Configure.
 ro := redict.Options{
-  url: redict://user:pass@host:port/db // refer to the options.v file
+  url: 'redict://einar:secret@localhost:6379/0' // refer to the options.v file
 }
 
 // Create a new client.

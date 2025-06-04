@@ -11,6 +11,7 @@ const default_port_string = '6379'
 pub struct Options {
 pub:
 	// [redict://]<user>:<pass>@<host>:<port>[/<db>]
+	// Defaults to @localhost:6379/0
 	url string
 	// pool_size defaults to 10 connections per CPU thread.
 	// it represents the maximum number of connections in the pool.
