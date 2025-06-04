@@ -14,11 +14,9 @@
 ## Options
 
 - Add support for unix socket connections
-- Parse connection strings with net.URL
 
 ## Pool
 
-- Consider removing pool entirely and let user handle pooling
 - Add timeout
 - Max idle time
 - Max life time

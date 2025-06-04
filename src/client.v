@@ -4,7 +4,7 @@ import arrays
 import net
 
 struct BaseClient {
-	options Options
+	options ParsedOptions
 mut:
 	connection_pool Pooler
 	on_close        fn () ! = unsafe { nil }
@@ -120,13 +120,13 @@ pub struct Client {
 }
 
 // new_client returns a client according to the specified Options.
-pub fn new_client(mut options Options) &Client {
-	options.init()
+pub fn new_client(options Options) !&Client {
+	po := options.init()!
 
 	mut c := &Client{
 		BaseClient: BaseClient{
-			options:         options
-			connection_pool: private_new_connection_pool(options)
+			options:         po
+			connection_pool: private_new_connection_pool(po)
 		}
 	}
 	c.cmdable_function = c.process
@@ -146,7 +146,7 @@ pub struct Connection {
 	CmdableStateful
 }
 
-fn new_connection(options Options, connection_pool &Pooler) &Connection {
+fn new_connection(options ParsedOptions, connection_pool &Pooler) &Connection {
 	mut c := &Connection{
 		BaseClient: BaseClient{
 			options:         options
