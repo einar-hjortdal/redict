@@ -3,7 +3,7 @@ module redict
 import time
 
 fn setup_cmdable_client() !&Client {
-	mut opts := Options{}
+	opts := Options{}
 	return new_client(opts)
 }
 

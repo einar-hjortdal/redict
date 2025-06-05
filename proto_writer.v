@@ -7,13 +7,13 @@ import time
 // TODO consider using io.BufferedWriter
 struct ProtoWriter {
 mut:
-	writer  io.Writer
+	writer  &io.Writer
 	buf_len []u8
 	buf_num []u8
 }
 
-fn new_writer(io_writer io.Writer) ProtoWriter {
-	return ProtoWriter{
+fn new_writer(mut io_writer io.Writer) &ProtoWriter {
+	return &ProtoWriter{
 		writer:  io_writer
 		buf_len: []u8{len: 64, cap: 64}
 		buf_num: []u8{len: 64, cap: 64}
@@ -66,11 +66,8 @@ fn (mut wr ProtoWriter) write_len(n int) ! {
 
 fn (mut wr ProtoWriter) write_bytes(b []byte) ! {
 	wr.writer.write(resp_string.bytes())!
-
 	wr.write_len(b.len)!
-
 	wr.writer.write(b)!
-
 	wr.writer.write(resp_crlf.bytes())!
 }
 

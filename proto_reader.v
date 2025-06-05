@@ -11,7 +11,7 @@ struct ProtoReader {
 	// mfails is the maximum number of fails after which it is assumed that the stream has ended.
 	mfails int
 mut:
-	reader io.Reader
+	reader &io.Reader
 	// buf is the buffer read with `Reader.read`.
 	buf []u8
 	// line is the line constructed by scanning buf with private_read_line.
@@ -22,8 +22,8 @@ mut:
 	fails int
 }
 
-fn new_reader(io_reader io.Reader) ProtoReader {
-	return ProtoReader{
+fn new_reader(mut io_reader io.Reader) &ProtoReader {
+	return &ProtoReader{
 		reader: io_reader
 		buf:    []u8{len: buf_len, cap: buf_len}
 		mfails: 2

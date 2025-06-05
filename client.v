@@ -41,7 +41,7 @@ fn (mut c BaseClient) retrieve_connection() !&PoolConnection {
 	return cn
 }
 
-fn (c BaseClient) init_connection(mut cn PoolConnection) ! {
+fn (mut c BaseClient) init_connection(mut cn PoolConnection) ! {
 	if cn.initialized {
 		return
 	}
@@ -49,7 +49,7 @@ fn (c BaseClient) init_connection(mut cn PoolConnection) ! {
 
 	username := c.options.username
 	password := c.options.password
-	conn_pool := new_single_connection_pool(c.connection_pool, cn)
+	conn_pool := new_single_connection_pool(mut c.connection_pool, cn)
 	conn := new_connection(c.options, conn_pool)
 
 	conn.hello(3, username, password, '')!
@@ -95,11 +95,10 @@ fn (mut c BaseClient) process(mut cmd Cmder) ! {
 }
 
 fn (mut c BaseClient) attempt_process(mut cmd Cmder) ! {
-	c.with_connection(fn [mut cmd] (mut cn PoolConnection) ! {
-		cn.with_writer(fn [cmd] (mut wr ProtoWriter) ! {
-			write_cmd(mut wr, cmd)!
+	c.with_connection(fn [mut cmd] (mut pc PoolConnection) ! {
+		pc.with_writer(fn [cmd] (mut wr ProtoWriter) ! {
 		})!
-		cn.with_reader(fn [mut cmd] (mut rd ProtoReader) ! {
+		pc.with_reader(fn [mut cmd] (mut rd ProtoReader) ! {
 			cmd.read_reply(mut rd)!
 		})!
 	})!

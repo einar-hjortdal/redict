@@ -11,8 +11,8 @@ pub interface Cmder {
 	val() Value
 	// read_timeout() time.Duration
 mut:
-	set_first_key_pos(int)
 	read_reply(mut rd ProtoReader) !
+	set_first_key_pos(int)
 }
 
 fn write_cmds(mut wr ProtoWriter, cmds []Cmder) ! {
