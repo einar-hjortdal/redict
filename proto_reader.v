@@ -37,6 +37,10 @@ fn (mut rd ProtoReader) reset() {
 	rd.fails = 0
 }
 
+// The problem is (i think):
+// Buffer is filled with n bytes, n < buf_len, and buf[n..buf_len] is filled with zeroes.
+// Function attempts to read buf[n..buf_len] and returns error.
+// Instead it should read the io.reader again
 fn (mut rd ProtoReader) private_read_line() !string {
 	// Fill buffer
 	if rd.offset == 0 {
