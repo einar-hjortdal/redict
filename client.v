@@ -27,7 +27,11 @@ fn (mut c BaseClient) get_connection() !&PoolConnection {
 
 fn (mut c BaseClient) retrieve_connection() !&PoolConnection {
 	mut cn := c.connection_pool.get()!
-
+	unsafe {
+		if cn.connection == nil {
+			println('------------- IS NIL') // SingleConnectionPool.get causes this
+		}
+	}
 	if cn.initialized {
 		return cn
 	}

@@ -101,7 +101,7 @@ fn (mut p ConnectionPool) private_new_connection(pooled bool) !&PoolConnection {
 		if p.pool_size >= p.opts.pool_size {
 			pc.pooled = false
 		} else {
-			p.pool_size += 1
+			p.pool_size++
 		}
 	}
 	p.mutex.unlock()
