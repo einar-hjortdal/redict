@@ -260,7 +260,7 @@ fn (mut p SingleConnectionPool) get() !&PoolConnection {
 	if p.sticky_error != '' {
 		return error(p.sticky_error)
 	}
-	return &p.connection
+	return p.connection
 }
 
 fn (mut p SingleConnectionPool) put(mut cn PoolConnection) ! {}
