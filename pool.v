@@ -192,11 +192,12 @@ fn (mut pool ConnectionPool) put(mut connection PoolConnection) ! {
 }
 
 fn (mut p ConnectionPool) remove_connection(pc &PoolConnection) {
+	println(p.connections.len)
 	for i := 0; i < p.connections.len; i++ {
-		if p.connections[i] == pc {
-			// Note: array.delete does not change the array in-place
+		c := p.connections[i]
+		if c == pc {
 			p.connections.delete(i)
-			if p.connections[i].pooled {
+			if c.pooled {
 				p.pool_size--
 				p.check_min_idle_connections()
 			}
