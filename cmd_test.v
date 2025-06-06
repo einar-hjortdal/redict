@@ -8,7 +8,7 @@ fn setup_cmdable_client() !&Client {
 }
 
 fn test_ping() {
-	client := setup_cmdable_client()!
+	mut client := setup_cmdable_client()!
 	r := client.ping()!
 	v := r.val()
 	assert v is string && v == 'PONG'

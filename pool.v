@@ -159,7 +159,7 @@ fn (mut pool ConnectionPool) pop_idle() !&PoolConnection {
 	} else {
 		pool.idle_connections = []&PoolConnection{}
 	}
-	pool.idle_connections_length -= 1
+	pool.idle_connections_length--
 	pool.check_min_idle_connections()
 	return popped_conn
 }
@@ -179,7 +179,7 @@ fn (mut pool ConnectionPool) put(mut connection PoolConnection) ! {
 		pool.idle_connections = arrays.concat(pool.idle_connections, connection)
 		pool.idle_connections_length++
 	} else {
-		pool.remove_connection(&connection)
+		pool.remove_connection(connection)
 		should_close_connection = true
 	}
 
@@ -191,12 +191,12 @@ fn (mut pool ConnectionPool) put(mut connection PoolConnection) ! {
 	}
 }
 
-fn (mut p ConnectionPool) remove_connection(pool_connection &PoolConnection) {
-	for idx, pc in p.connections {
-		if pc == pool_connection {
+fn (mut p ConnectionPool) remove_connection(pc &PoolConnection) {
+	for i := 0; i < p.connections.len; i++ {
+		if p.connections[i] == pc {
 			// Note: array.delete does not change the array in-place
-			p.connections.delete(idx)
-			if pc.pooled {
+			p.connections.delete(i)
+			if p.connections[i].pooled {
 				p.pool_size--
 				p.check_min_idle_connections()
 			}

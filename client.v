@@ -128,10 +128,8 @@ pub fn new_client(options Options) !&Client {
 	po := options.init()!
 
 	mut c := &Client{
-		BaseClient: &BaseClient{
-			options:         po
-			connection_pool: private_new_connection_pool(po)
-		}
+		options:         po
+		connection_pool: private_new_connection_pool(po)
 	}
 	c.cmdable_function = c.process
 	return c
@@ -152,10 +150,8 @@ pub struct Connection {
 
 fn new_connection(po ParsedOptions, mut cp Pooler) &Connection {
 	mut c := &Connection{
-		BaseClient: &BaseClient{
-			options:         po
-			connection_pool: cp
-		}
+		options:         po
+		connection_pool: cp
 	}
 	c.cmdable_function = c.process
 	c.cmdable_stateful_function = c.process

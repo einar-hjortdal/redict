@@ -106,7 +106,7 @@ fn (opts Options) init() !ParsedOptions {
 
 fn new_dialer(address string) fn (address string) !&net.TcpConn {
 	return fn [address] (addr string) !&net.TcpConn {
-		return net.dial_tcp('${addr}')!
+		return net.dial_tcp(addr)!
 	}
 }
 
