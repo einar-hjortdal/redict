@@ -40,8 +40,8 @@ fn (mut rd ProtoReader) reset() {
 fn (mut rd ProtoReader) private_read_line() !string {
 	// Fill buffer
 	if rd.offset == 0 {
-		bytes_read := rd.reader.read(mut rd.buf)!
-		if bytes_read == 0 {
+		r := rd.reader.read(mut rd.buf)!
+		if r == 0 {
 			if rd.fails < rd.mfails {
 				rd.fails++
 				return rd.private_read_line()
@@ -62,7 +62,7 @@ fn (mut rd ProtoReader) private_read_line() !string {
 		rd.offset++
 	}
 
-	return error(r'Invalid server response: response does not end with \n')
+	return error(format_error_message('Invalid server response: response does not end with \\n'))
 }
 
 // Should return string or Nil or RedictError.

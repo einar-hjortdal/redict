@@ -77,14 +77,14 @@ fn (mut p ConnectionPool) check_min_idle_connections() {
 	}
 }
 
-fn (mut p ConnectionPool) add_idle_connection() ! {
-	p.mutex.@lock()
+fn (mut cp ConnectionPool) add_idle_connection() ! {
+	cp.mutex.@lock()
 	defer {
-		p.mutex.unlock()
+		cp.mutex.unlock()
 	}
-	new_idle_conn := p.dial_connection(true)!
-	p.connections = arrays.concat(p.connections, new_idle_conn)
-	p.idle_connections = arrays.concat(p.idle_connections, new_idle_conn)
+	new_idle_conn := cp.dial_connection(true)!
+	cp.connections = arrays.concat(cp.connections, new_idle_conn)
+	cp.idle_connections = arrays.concat(cp.idle_connections, new_idle_conn)
 }
 
 fn (mut pool ConnectionPool) new_connection() !&PoolConnection {
@@ -117,40 +117,40 @@ fn (mut p ConnectionPool) dial_connection(pooled bool) !&PoolConnection {
 }
 
 // get returns an idle connection from the pool or creates a new one if necessary.
-fn (mut pool ConnectionPool) get() !&PoolConnection {
-	pool.wait_turn()!
+fn (mut cp ConnectionPool) get() !&PoolConnection {
+	cp.wait_turn()!
 	for {
-		pool.mutex.@lock()
-		connection := pool.pop_idle() or {
-			pool.mutex.unlock()
+		cp.mutex.@lock()
+		pc := cp.pop_idle() or {
+			cp.mutex.unlock()
 			break
 		}
-		pool.mutex.unlock()
-		return connection
+		cp.mutex.unlock()
+		return pc
 	}
-	new_connection := pool.private_new_connection(true) or {
-		pool.free_turn()
+	new_pc := cp.private_new_connection(true) or {
+		cp.free_turn()
 		return err
 	}
-	return new_connection
+	return new_pc
 }
 
-fn (mut pool ConnectionPool) wait_turn() ! {
-	if pool.queue.len < pool.queue.cap {
-		pool.queue <- 0
+// TODO add timeout to prevent potentially waiting forever
+fn (mut cp ConnectionPool) wait_turn() ! {
+	if cp.queue.len < cp.queue.cap {
+		cp.queue <- 0
 		return
 	}
-	// TODO add timeout to prevent potentially waiting forever
 }
 
-fn (mut pool ConnectionPool) free_turn() {
-	_ := <-pool.queue
+fn (mut cp ConnectionPool) free_turn() {
+	_ := <-cp.queue
 }
 
 fn (mut pool ConnectionPool) pop_idle() !&PoolConnection {
 	length := pool.idle_connections.len
 	if length == 0 {
-		return error('No available idle connections')
+		return error(format_error_message('No available idle connections'))
 	}
 	index := length - 1
 	mut popped_conn := pool.idle_connections[index]
@@ -191,21 +191,20 @@ fn (mut pool ConnectionPool) put(mut connection PoolConnection) ! {
 	}
 }
 
-fn (mut p ConnectionPool) remove_connection(pc &PoolConnection) {
-	println(p.connections.len)
-	for i := 0; i < p.connections.len; i++ {
-		c := p.connections[i]
+fn (mut cp ConnectionPool) remove_connection(pc &PoolConnection) {
+	for i := 0; i < cp.connections.len; i++ {
+		c := cp.connections[i]
 		if c == pc {
-			p.connections.delete(i)
+			cp.connections.delete(i)
 			if c.pooled {
-				p.pool_size--
-				p.check_min_idle_connections()
+				cp.pool_size--
+				cp.check_min_idle_connections()
 			}
 		}
 	}
 }
 
-fn (mut p ConnectionPool) close_connection(mut pc PoolConnection) ! {
+fn (mut cp ConnectionPool) close_connection(mut pc PoolConnection) ! {
 	pc.close()!
 }
 
@@ -221,18 +220,18 @@ fn (mut p ConnectionPool) close() ! {
 	p.mutex.unlock()
 }
 
-fn (mut pool ConnectionPool) remove(mut connection PoolConnection, reason string) {
-	pool.remove_connection_with_lock(mut connection)
-	pool.free_turn()
-	pool.close_connection(mut connection) or {}
+fn (mut cp ConnectionPool) remove(mut connection PoolConnection, reason string) {
+	cp.remove_connection_with_lock(mut connection)
+	cp.free_turn()
+	cp.close_connection(mut connection) or {}
 }
 
-fn (mut pool ConnectionPool) remove_connection_with_lock(mut connection PoolConnection) {
-	pool.mutex.@lock()
+fn (mut cp ConnectionPool) remove_connection_with_lock(mut pc PoolConnection) {
+	cp.mutex.@lock()
 	defer {
-		pool.mutex.unlock()
+		cp.mutex.unlock()
 	}
-	pool.remove_connection(connection)
+	cp.remove_connection(pc)
 }
 
 struct SingleConnectionPool {
@@ -249,27 +248,27 @@ fn new_single_connection_pool(mut pool Pooler, mut connection PoolConnection) &S
 	}
 }
 
-fn (mut p SingleConnectionPool) new_connection() !&PoolConnection {
-	return p.pool.new_connection()
+fn (mut scp SingleConnectionPool) new_connection() !&PoolConnection {
+	return scp.pool.new_connection()
 }
 
-fn (mut p SingleConnectionPool) close_connection(mut cn PoolConnection) ! {
-	return p.pool.close_connection(mut cn)
+fn (mut scp SingleConnectionPool) close_connection(mut cn PoolConnection) ! {
+	return scp.pool.close_connection(mut cn)
 }
 
-fn (mut p SingleConnectionPool) get() !&PoolConnection {
-	if p.sticky_error != '' {
-		return error(p.sticky_error)
+fn (mut scp SingleConnectionPool) get() !&PoolConnection {
+	if scp.sticky_error != '' {
+		return error(scp.sticky_error)
 	}
-	return p.connection
+	return scp.connection
 }
 
-fn (mut p SingleConnectionPool) put(mut cn PoolConnection) ! {}
+fn (mut scp SingleConnectionPool) put(mut cn PoolConnection) ! {}
 
-fn (mut p SingleConnectionPool) remove(mut cn PoolConnection, reason string) {
-	p.sticky_error = reason
+fn (mut scp SingleConnectionPool) remove(mut cn PoolConnection, reason string) {
+	scp.sticky_error = reason
 }
 
-fn (mut p SingleConnectionPool) close() ! {
-	p.sticky_error = 'closed'
+fn (mut scp SingleConnectionPool) close() ! {
+	scp.sticky_error = 'closed'
 }

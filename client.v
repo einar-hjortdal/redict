@@ -27,13 +27,6 @@ fn (mut c BaseClient) get_connection() !&PoolConnection {
 
 fn (mut c BaseClient) retrieve_connection() !&PoolConnection {
 	mut cn := c.connection_pool.get()!
-	unsafe {
-		if cn.connection == nil {
-			println('nil') // SingleConnectionPool.get causes this
-		} else {
-			println('not nil')
-		}
-	}
 	if cn.initialized {
 		return cn
 	}
@@ -57,7 +50,7 @@ fn (mut c BaseClient) init_connection(mut cn PoolConnection) ! {
 	mut cp := new_single_connection_pool(mut c.connection_pool, mut cn)
 	mut conn := new_connection(c.options, mut cp)
 
-	conn.hello(3, username, password, '')!
+	conn.hello(3, username, password, 'einar_hjortdal.redict')!
 
 	if c.options.db > 0 {
 		conn.select_db(c.options.db)!
