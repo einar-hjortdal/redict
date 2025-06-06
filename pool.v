@@ -210,8 +210,8 @@ fn (mut p ConnectionPool) close_connection(mut pc PoolConnection) ! {
 
 fn (mut p ConnectionPool) close() ! {
 	p.mutex.@lock()
-	for mut pc in p.connections {
-		p.close_connection(mut pc)!
+	for i := 0; i < p.connections.len; i++ {
+		p.close_connection(mut p.connections[i])!
 	}
 	p.connections.clear()
 	p.idle_connections.clear()
