@@ -172,7 +172,6 @@ fn (mut pool ConnectionPool) put(mut connection PoolConnection) ! {
 		return
 	}
 
-	connection.reader.reset()
 	pool.mutex.@lock()
 	if pool.opts.max_idle_connections == 0
 		|| pool.idle_connections_length < pool.opts.max_idle_connections {

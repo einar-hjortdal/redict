@@ -8,96 +8,45 @@ import strconv
 const buf_len = 4096
 
 struct ProtoReader {
-	// mfails is the maximum number of fails after which it is assumed that the stream has ended.
-	mfails int
 mut:
-	reader &io.Reader
-	// buf is the buffer read with `Reader.read`.
-	buf []u8
-	// line is the line constructed by scanning buf with private_read_line.
-	line []u8
-	// Current offset in `buf`.
-	offset int
-	// fails is the number of times private_read_line read 0 bytes in a row.
-	fails int
+	reader &io.BufferedReader
 }
 
 fn new_reader(mut io_reader io.Reader) &ProtoReader {
 	return &ProtoReader{
-		reader: io_reader
-		buf:    []u8{len: buf_len, cap: buf_len}
-		mfails: 2
+		reader: io.new_buffered_reader(reader: io_reader)
 	}
-}
-
-fn (mut rd ProtoReader) reset() {
-	rd.buf = []u8{len: buf_len, cap: buf_len}
-	rd.line = []u8{}
-	rd.offset = 0
-	rd.fails = 0
-}
-
-// The problem is (i think):
-// Buffer is filled with n bytes, n < buf_len, and buf[n..buf_len] is filled with zeroes.
-// Function attempts to read buf[n..buf_len] and returns error.
-// Instead it should read the io.reader again
-fn (mut rd ProtoReader) private_read_line() !string {
-	// Fill buffer
-	if rd.offset == 0 {
-		r := rd.reader.read(mut rd.buf)!
-		if r == 0 {
-			if rd.fails < rd.mfails {
-				rd.fails++
-				return rd.private_read_line()
-			}
-		}
-	}
-
-	// Build string from buffer
-	for i := rd.offset; i < rd.buf.len; i++ {
-		rd.line << rd.buf[i]
-		// Stop at the first `\n` encountered. A buffered response may contain more than one `\n`.
-		if rd.buf[i] == `\n` {
-			res := rd.line.bytestr()
-			rd.line = []u8{}
-			rd.offset++
-			return res
-		}
-		rd.offset++
-	}
-
-	return error(format_error_message('Invalid server response: response does not end with \\n'))
 }
 
 // Should return string or Nil or RedictError.
 fn (mut rd ProtoReader) read_line() !Value {
-	line := rd.read()!
+	l := rd.read()!
 
-	if line.starts_with(resp_error) {
+	if l.starts_with(resp_error) {
 		return RedictError{
-			msg: line.trim_string_right(resp_error)
+			msg: l.trim_string_right(resp_error)
 		}
 	}
-	if line.starts_with(resp_nil) {
+
+	if l.starts_with(resp_nil) {
 		return Nil{}
 	}
-	if line.starts_with(resp_blob_error) {
-		return rd.read_string_reply(line)!
+
+	if l.starts_with(resp_blob_error) {
+		return rd.read_string_reply(l)!
 	}
+
 	// Discard attribute type
-	if line.starts_with(resp_attr) {
-		rd.discard(line)!
+	if l.starts_with(resp_attr) {
+		rd.discard(l)!
 		return rd.read_line()!
 	}
-	return line
+
+	return l
 }
 
 fn (mut rd ProtoReader) read() !string {
-	b := rd.private_read_line()!
-	if b == resp_crlf || !b.ends_with(resp_crlf) {
-		return error('Invalid reply: ${b}')
-	}
-	return b.trim_string_right(resp_crlf)
+	return rd.reader.read_line() // note: read_line trims the final `\n` (seems like it trims \r\n)
 }
 
 // Should return string or Nil or RedictError.
@@ -107,12 +56,8 @@ fn (mut rd ProtoReader) read_string_reply(line string) !Value {
 		int {
 			// read exactly n+2 bytes from rd.buf into b
 			n_plus_2 := *n + 2
-			mut b := []u8{len: n_plus_2, cap: n_plus_2}
-			i_end := rd.offset + n_plus_2
-			for i, j := rd.offset, 0; i < i_end; i, j = i + 1, j + 1 {
-				b[j] = rd.buf[i]
-				rd.offset++
-			}
+			mut b := []u8{len: n_plus_2}
+			rd.reader.read(mut b)!
 			return b.bytestr().trim_string_right(resp_crlf)
 		}
 		Nil {
