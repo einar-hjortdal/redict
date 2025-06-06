@@ -95,6 +95,7 @@ fn (mut c BaseClient) process(mut cmd Cmder) ! {
 fn (mut c BaseClient) attempt_process(mut cmd Cmder) ! {
 	c.with_connection(fn [mut cmd] (mut pc PoolConnection) ! {
 		pc.with_writer(fn [cmd] (mut wr ProtoWriter) ! {
+			write_cmd(mut wr, cmd)!
 		})!
 		pc.with_reader(fn [mut cmd] (mut rd ProtoReader) ! {
 			cmd.read_reply(mut rd)!
