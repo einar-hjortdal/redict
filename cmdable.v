@@ -119,18 +119,18 @@ pub fn (c Cmdable) hget(key string, index string) !&StringCmd {
 
 struct CmdableStateful {
 mut:
-	cmdable_stateful_function fn (cmd &Cmder) ! = unsafe { nil }
+	cmdable_stateful_function fn (mut cmd Cmder) ! = unsafe { nil }
 }
 
 pub fn (c CmdableStateful) auth(password string) !&StatusCmd {
-	cmd := new_status_cmd('auth', password)
-	c.cmdable_stateful_function(cmd)!
+	mut cmd := new_status_cmd('auth', password)
+	c.cmdable_stateful_function(mut cmd)!
 	return cmd
 }
 
 pub fn (c CmdableStateful) auth_acl(username string, password string) !&StatusCmd {
-	cmd := new_status_cmd('auth', username, password)
-	c.cmdable_stateful_function(cmd)!
+	mut cmd := new_status_cmd('auth', username, password)
+	c.cmdable_stateful_function(mut cmd)!
 	return cmd
 }
 
@@ -147,15 +147,15 @@ pub fn (c CmdableStateful) hello(protover int, username string, password string,
 	if client_name != '' {
 		args = arrays.concat(args, 'setname', client_name)
 	}
-	cmd := new_map_string_value_cmd(...args)
+	mut cmd := new_map_string_value_cmd(...args)
 
-	c.cmdable_stateful_function(cmd)!
+	c.cmdable_stateful_function(mut cmd)!
 	return cmd
 }
 
 // It is called `select_db` because `select` is a reserved keyword.
 pub fn (c CmdableStateful) select_db(index int) !&StatusCmd {
-	cmd := new_status_cmd('select', index)
-	c.cmdable_stateful_function(cmd)!
+	mut cmd := new_status_cmd('select', index)
+	c.cmdable_stateful_function(mut cmd)!
 	return cmd
 }

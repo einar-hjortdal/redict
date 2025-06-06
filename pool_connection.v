@@ -4,15 +4,13 @@ import net
 import time
 
 @[heap]
-pub struct PoolConnection {
-pub:
+struct PoolConnection {
 	created_at time.Time
 mut:
-	connection &net.TcpConn
-	pooled     bool
-	reader     &ProtoReader
-	writer     &ProtoWriter
-pub mut:
+	connection  &net.TcpConn
+	pooled      bool
+	reader      &ProtoReader
+	writer      &ProtoWriter
 	initialized bool
 }
 
@@ -30,10 +28,10 @@ fn (mut pc PoolConnection) close() ! {
 	pc.connection.close()!
 }
 
-pub fn (mut pc PoolConnection) with_reader(func fn (mut rd ProtoReader) !) ! {
+fn (mut pc PoolConnection) with_reader(func fn (mut rd ProtoReader) !) ! {
 	func(mut pc.reader)!
 }
 
-pub fn (mut pc PoolConnection) with_writer(func fn (mut wr ProtoWriter) !) ! {
+fn (mut pc PoolConnection) with_writer(func fn (mut wr ProtoWriter) !) ! {
 	func(mut pc.writer)!
 }

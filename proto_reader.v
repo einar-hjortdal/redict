@@ -43,23 +43,23 @@ fn (mut rd ProtoReader) private_read_line() !string {
 		bytes_read := rd.reader.read(mut rd.buf)!
 		if bytes_read == 0 {
 			if rd.fails < rd.mfails {
-				rd.fails += 1
+				rd.fails++
 				return rd.private_read_line()
 			}
 		}
 	}
 
 	// Build string from buffer
-	for i := rd.offset; i < rd.buf.len; i += 1 {
+	for i := rd.offset; i < rd.buf.len; i++ {
 		rd.line << rd.buf[i]
 		// Stop at the first `\n` encountered. A buffered response may contain more than one `\n`.
 		if rd.buf[i] == `\n` {
 			res := rd.line.bytestr()
 			rd.line = []u8{}
-			rd.offset += 1
+			rd.offset++
 			return res
 		}
-		rd.offset += 1
+		rd.offset++
 	}
 
 	return error(r'Invalid server response: response does not end with \n')
@@ -107,7 +107,7 @@ fn (mut rd ProtoReader) read_string_reply(line string) !Value {
 			i_end := rd.offset + n_plus_2
 			for i, j := rd.offset, 0; i < i_end; i, j = i + 1, j + 1 {
 				b[j] = rd.buf[i]
-				rd.offset += 1
+				rd.offset++
 			}
 			return b.bytestr().trim_string_right(resp_crlf)
 		}

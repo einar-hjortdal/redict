@@ -6,7 +6,7 @@ import net
 struct BaseClient {
 	options ParsedOptions
 mut:
-	connection_pool Pooler
+	connection_pool &Pooler
 	on_close        fn () ! = unsafe { nil }
 }
 
@@ -22,8 +22,7 @@ fn (mut c BaseClient) new_connection() !&PoolConnection {
 }
 
 fn (mut c BaseClient) get_connection() !&PoolConnection {
-	cn := c.retrieve_connection()!
-	return cn
+	return c.retrieve_connection()!
 }
 
 fn (mut c BaseClient) retrieve_connection() !&PoolConnection {
@@ -49,8 +48,8 @@ fn (mut c BaseClient) init_connection(mut cn PoolConnection) ! {
 
 	username := c.options.username
 	password := c.options.password
-	conn_pool := new_single_connection_pool(mut c.connection_pool, cn)
-	conn := new_connection(c.options, conn_pool)
+	mut cp := new_single_connection_pool(mut c.connection_pool, mut cn)
+	mut conn := new_connection(c.options, mut cp)
 
 	conn.hello(3, username, password, '')!
 
@@ -123,7 +122,7 @@ pub fn new_client(options Options) !&Client {
 	po := options.init()!
 
 	mut c := &Client{
-		BaseClient: BaseClient{
+		BaseClient: &BaseClient{
 			options:         po
 			connection_pool: private_new_connection_pool(po)
 		}
@@ -145,11 +144,11 @@ pub struct Connection {
 	CmdableStateful
 }
 
-fn new_connection(options ParsedOptions, connection_pool &Pooler) &Connection {
+fn new_connection(po ParsedOptions, mut cp Pooler) &Connection {
 	mut c := &Connection{
-		BaseClient: BaseClient{
-			options:         options
-			connection_pool: connection_pool
+		BaseClient: &BaseClient{
+			options:         po
+			connection_pool: cp
 		}
 	}
 	c.cmdable_function = c.process
