@@ -73,7 +73,7 @@ fn reply_len(line string) !Value {
 	n := strconv.atoi(line[1..])!
 
 	if n < -1 {
-		return error('Invalid reply: ${line}')
+		return error(format_error_message('Invalid reply: ${line}'))
 	}
 
 	if line.starts_with(resp_string) || line.starts_with(resp_verbatim)
@@ -89,7 +89,7 @@ fn reply_len(line string) !Value {
 
 fn (mut rd ProtoReader) discard(line string) ! {
 	if line.len == 0 {
-		return error('Invalid line')
+		return error(format_error_message('Invalid line'))
 	}
 
 	if line.starts_with(resp_status) || line.starts_with(resp_error) || line.starts_with(resp_int)
@@ -201,7 +201,7 @@ fn (rd ProtoReader) private_read_bool(line string) !bool {
 	if line[1..] == 'f' {
 		return false
 	}
-	return error("Can't parse bool reply: ${line}")
+	return error(format_error_message("Can't parse bool reply: ${line}"))
 }
 
 // fn (rd ProtoReader) read_big_int(line string) !big.Integer {
@@ -379,7 +379,7 @@ fn (mut rd ProtoReader) read_int() !Value {
 		}
 		else {}
 	}
-	return error("Can't parse int reply: ${line}")
+	return error(format_error_message("Can't parse int reply: ${line}"))
 }
 
 // read_map_len reads the length of the map type.
@@ -402,7 +402,7 @@ fn (mut rd ProtoReader) read_map_len() !Value {
 					int {
 						len := *n
 						if len % 2 != 0 {
-							return error('The length of the array must be a multiple of 2, got: ${n}')
+							return error(format_error_message('The length of the array must be a multiple of 2, got: ${n}'))
 						}
 						return len / 2
 					}
@@ -424,5 +424,5 @@ fn (mut rd ProtoReader) read_map_len() !Value {
 			return error(format_error_message('ProtoReader.read_map_len: Reader.read_string returned unexpect type'))
 		}
 	}
-	return error("Can't parse map reply: ${line}")
+	return error(format_error_message("Can't parse map reply: ${line}"))
 }
