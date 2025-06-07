@@ -38,7 +38,7 @@ mut:
 }
 
 fn new_connection_pool(opts PoolOptions) &ConnectionPool {
-	mut p := &ConnectionPool{
+	mut cp := &ConnectionPool{
 		opts:             opts
 		queue:            chan int{cap: opts.pool_size}
 		connections:      []&PoolConnection{}
@@ -46,30 +46,31 @@ fn new_connection_pool(opts PoolOptions) &ConnectionPool {
 		mutex:            sync.new_mutex()
 	}
 
-	p.mutex.@lock()
-	p.check_min_idle_connections()
-	p.mutex.unlock()
+	cp.mutex.@lock()
+	cp.check_min_idle_connections()
+	cp.mutex.unlock()
 
-	return p
+	return cp
 }
 
-fn (mut p ConnectionPool) check_min_idle_connections() {
-	if p.opts.min_idle_connections == 0 {
+fn (mut cp ConnectionPool) check_min_idle_connections() {
+	if cp.opts.min_idle_connections == 0 {
 		return
 	}
-	for p.pool_size < p.opts.pool_size && p.idle_connections_length < p.opts.min_idle_connections {
-		if p.queue.len < p.queue.cap {
-			p.queue <- 0
-			p.pool_size++
-			p.idle_connections_length++
+	for cp.pool_size < cp.opts.pool_size
+		&& cp.idle_connections_length < cp.opts.min_idle_connections {
+		if cp.queue.len < cp.queue.cap {
+			cp.queue <- 0
+			cp.pool_size++
+			cp.idle_connections_length++
 
-			go fn [mut p] () {
-				p.add_idle_connection() or { return }
-				p.mutex.@lock()
-				p.pool_size--
-				p.idle_connections_length--
-				p.mutex.unlock()
-				p.free_turn()
+			go fn [mut cp] () {
+				cp.add_idle_connection() or { return }
+				cp.mutex.@lock()
+				cp.pool_size--
+				cp.idle_connections_length--
+				cp.mutex.unlock()
+				cp.free_turn()
 			}()
 		} else {
 			return
@@ -91,26 +92,26 @@ fn (mut pool ConnectionPool) new_connection() !&PoolConnection {
 	return pool.private_new_connection(false)
 }
 
-fn (mut p ConnectionPool) private_new_connection(pooled bool) !&PoolConnection {
-	mut pc := p.dial_connection(pooled)!
+fn (mut cp ConnectionPool) private_new_connection(pooled bool) !&PoolConnection {
+	mut pc := cp.dial_connection(pooled)!
 
-	p.mutex.@lock()
-	p.connections = arrays.concat(p.connections, pc)
+	cp.mutex.@lock()
+	cp.connections = arrays.concat(cp.connections, pc)
 	if pooled {
 		// If pool is full remove the connection on next put.
-		if p.pool_size >= p.opts.pool_size {
+		if cp.pool_size >= cp.opts.pool_size {
 			pc.pooled = false
 		} else {
-			p.pool_size++
+			cp.pool_size++
 		}
 	}
-	p.mutex.unlock()
+	cp.mutex.unlock()
 
 	return pc
 }
 
-fn (mut p ConnectionPool) dial_connection(pooled bool) !&PoolConnection {
-	mut c := p.opts.dialer()!
+fn (mut cp ConnectionPool) dial_connection(pooled bool) !&PoolConnection {
+	mut c := cp.opts.dialer()!
 	mut pc := new_pool_connection(mut c)
 	pc.pooled = pooled
 	return pc
@@ -147,46 +148,46 @@ fn (mut cp ConnectionPool) free_turn() {
 	_ := <-cp.queue
 }
 
-fn (mut pool ConnectionPool) pop_idle() !&PoolConnection {
-	length := pool.idle_connections.len
+fn (mut cp ConnectionPool) pop_idle() !&PoolConnection {
+	length := cp.idle_connections.len
 	if length == 0 {
 		return error(format_error_message('No available idle connections'))
 	}
 	index := length - 1
-	mut popped_conn := pool.idle_connections[index]
+	mut popped_conn := cp.idle_connections[index]
 	if index > 0 {
-		pool.idle_connections = pool.idle_connections[0..index - 1]
+		cp.idle_connections = cp.idle_connections[0..index - 1]
 	} else {
-		pool.idle_connections = []&PoolConnection{}
+		cp.idle_connections = []&PoolConnection{}
 	}
-	pool.idle_connections_length--
-	pool.check_min_idle_connections()
+	cp.idle_connections_length--
+	cp.check_min_idle_connections()
 	return popped_conn
 }
 
-fn (mut pool ConnectionPool) put(mut connection PoolConnection) ! {
+fn (mut cp ConnectionPool) put(mut c PoolConnection) ! {
 	mut should_close_connection := false
 
-	if !connection.pooled {
-		pool.remove(mut connection, 'Not pooled')
+	if !c.pooled {
+		cp.remove(mut c, 'Not pooled')
 		return
 	}
 
-	pool.mutex.@lock()
-	if pool.opts.max_idle_connections == 0
-		|| pool.idle_connections_length < pool.opts.max_idle_connections {
-		pool.idle_connections = arrays.concat(pool.idle_connections, connection)
-		pool.idle_connections_length++
+	cp.mutex.@lock()
+	if cp.opts.max_idle_connections == 0
+		|| cp.idle_connections_length < cp.opts.max_idle_connections {
+		cp.idle_connections = arrays.concat(cp.idle_connections, c)
+		cp.idle_connections_length++
 	} else {
-		pool.remove_connection(connection)
+		cp.remove_connection(c)
 		should_close_connection = true
 	}
 
-	pool.mutex.unlock()
-	pool.free_turn()
+	cp.mutex.unlock()
+	cp.free_turn()
 
 	if should_close_connection {
-		pool.close_connection(mut connection)!
+		cp.close_connection(mut c)!
 	}
 }
 
@@ -219,10 +220,10 @@ fn (mut p ConnectionPool) close() ! {
 	p.mutex.unlock()
 }
 
-fn (mut cp ConnectionPool) remove(mut connection PoolConnection, reason string) {
-	cp.remove_connection_with_lock(mut connection)
+fn (mut cp ConnectionPool) remove(mut pc PoolConnection, reason string) {
+	cp.remove_connection_with_lock(mut pc)
 	cp.free_turn()
-	cp.close_connection(mut connection) or {}
+	cp.close_connection(mut pc) or {}
 }
 
 fn (mut cp ConnectionPool) remove_connection_with_lock(mut pc PoolConnection) {
