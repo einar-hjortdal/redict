@@ -10,8 +10,9 @@ fn setup_cmdable_client() !&Client {
 fn test_ping() {
 	mut client := setup_cmdable_client()!
 	r := client.ping()!
-	v := r.val()
-	assert v is string && v == 'PONG'
+	v, v_is_nil := r.val().get_string()!
+	assert v == 'PONG'
+	assert !v_is_nil
 }
 
 fn test_get_unset() {

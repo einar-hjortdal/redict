@@ -18,3 +18,21 @@ fn new_redict_error(err IError) RedictError {
 		msg: err.msg()
 	}
 }
+
+// Returns the string contained in v, also returns true if v is Nil. Error if v is not a string.
+pub fn (v Value) get_string() !(string, bool) {
+	match v {
+		string {
+			return *v, false
+		}
+		Nil {
+			return '', true
+		}
+		RedictError {
+			return v
+		}
+		else {
+			return error(format_error_message('Value is not string'))
+		}
+	}
+}
