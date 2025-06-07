@@ -16,6 +16,5 @@ const resp_set = '~' // ~<len>\r\n...
 const resp_attr = '|' // |<len>\r\n(key)\r\n(value)\r\n... + command reply
 const resp_push = '>' // ><len>\r\n...
 const resp_crlf = '\r\n'
-const resp_crlf_trimmed = '\r'
 const resp_streamed = 'EOF:'
 const resp_streamed_aggregated = '?'
