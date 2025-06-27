@@ -1,6 +1,6 @@
 # redict
 
-Redict library for the V language.
+[Redict](https://redict.io/) library for the V language, [compatible with Redis <=7.2.4](https://redict.io/docs/redis-compat/).
 
 ## Usage
 
@@ -31,10 +31,6 @@ println(result.val())
 - Provide a driver for [Redict](https://redict.io/)
 - Support all [Redict commands](https://redict.io/docs/commands/)
 - Provide utility functions
-
-### Non-objectives
-
-- Support [features not supported by Redict](https://redict.io/docs/redis-compat/)
 
 ## Development
 

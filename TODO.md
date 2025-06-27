@@ -9,7 +9,6 @@
 
 - Add tests
 - Add logger
-- Verify structs are being passed by reference when needed
 
 ## Options
 
@@ -39,7 +38,6 @@
 
 ## Cmdable
 
-- Support all commands listed [here](https://redict.io/docs/commands)
 - Add `do` API to issue unsupported commands
 - Gracefully handle errors when issuing commands on a server that requires authentication while not 
   being authenticated.

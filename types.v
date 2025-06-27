@@ -2,6 +2,7 @@ module redict
 
 pub interface Value {}
 
+// Nil is the value the redict client returns when the server responds with the RESP Null Bulk String
 pub struct Nil {}
 
 pub struct RedictError {
