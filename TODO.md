@@ -34,6 +34,7 @@
 
 ## Cmd
 
+- Change the type of `Cmdable.set` paramter `value` to be `Value` instead of `string`.
 - Format `BaseCmd.string_arg` returned string with `append_arg` instead of using string interpolation.
 
 ## Cmdable
