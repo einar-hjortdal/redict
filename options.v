@@ -73,11 +73,9 @@ fn (opts Options) init() !ParsedOptions {
 	address := get_address(url.host)
 	mut username := ''
 	mut password := ''
-	unsafe {
-		if url.user != nil {
-			username = url.user.username
-			password = url.user.password
-		}
+	if user := url.user {
+		username = user.username
+		password = user.password
 	}
 	db := url.path.trim('/').int()
 
