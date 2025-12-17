@@ -1,3 +1,5 @@
+<span style="background-color: #226f54; font-size: 125%; padding-top: 1.25%; padding-right: 2.5%; padding-bottom: 1.25%; padding-left: 2.5%; border-radius: 25px;">This project is active: new features are being developed, bugs are being fixed.</span>
+
 # redict
 
 [Redict](https://redict.io/) library for the V language, [compatible with Redis <=7.2.4](https://redict.io/docs/redis-compat/).
