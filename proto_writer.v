@@ -64,7 +64,7 @@ fn (mut wr ProtoWriter) write_len(n int) ! {
 	wr.writer.write(wr.buf_len)!
 }
 
-fn (mut wr ProtoWriter) write_bytes(b []byte) ! {
+fn (mut wr ProtoWriter) write_bytes(b []u8) ! {
 	wr.writer.write(resp_string.bytes())!
 	wr.write_len(b.len)!
 	wr.writer.write(b)!
