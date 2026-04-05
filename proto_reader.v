@@ -233,19 +233,22 @@ fn (mut rd ProtoReader) read_verb(line string) !Value {
 }
 
 fn (mut rd ProtoReader) read_slice(line string) ![]Value {
-	// TODO n := reply_len(line)!
-
-	mut val := []Value{} // TODO len: n
-	for i := 0; i < val.len; i++ {
-		if v := rd.read_reply() {
-			val[i] = v
-		} else {
-			val[i] = RedictError{
-				msg: err.msg()
+	n := reply_len(line)!
+	match n {
+		int {
+			mut val := []Value{len: n, init: Nil{}}
+			for i := 0; i < n; i++ {
+				v := rd.read_reply() or { Value(RedictError{
+					msg: err.msg()
+				}) }
+				val[i] = v
 			}
+			return val
+		}
+		else {
+			return error(format_error_message('ProtoReader.read_map: ProtoReader.read_reply returned unexpect type'))
 		}
 	}
-	return val
 }
 
 // Should return map[string]Value, Nil or RedictError
@@ -426,3 +429,4 @@ fn (mut rd ProtoReader) read_map_len() !Value {
 	}
 	return error(format_error_message("Can't parse map reply: ${line}"))
 }
+

@@ -272,3 +272,4 @@ fn (mut scp SingleConnectionPool) remove(mut cn PoolConnection, reason string) {
 fn (mut scp SingleConnectionPool) close() ! {
 	scp.sticky_error = 'closed'
 }
+
