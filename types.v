@@ -24,7 +24,7 @@ fn new_redict_error(err IError) RedictError {
 pub fn (v Value) get_string() !(string, bool) {
 	match v {
 		string {
-			return *v, false
+			return v, false
 		}
 		Nil {
 			return '', true

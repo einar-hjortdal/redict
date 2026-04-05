@@ -67,7 +67,7 @@ fn (cmd BaseCmd) arg_string(pos int) string {
 	arg := cmd.args[pos]
 	match arg {
 		string {
-			return *arg
+			return arg
 		}
 		else {
 			return '${arg}'
