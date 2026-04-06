@@ -4,9 +4,9 @@ import net
 import net.urllib
 import runtime
 
-const protocol_flag_string = 'redict://'
-const default_host_string = 'localhost'
-const default_port_string = '6379'
+pub const protocol_flag_string = 'redict://'
+pub const default_host_string = 'localhost'
+pub const default_port_string = '6379'
 
 pub struct Options {
 pub:
@@ -30,7 +30,7 @@ struct ParsedOptions {
 	username             string
 	password             string
 	db                   int
-	dialer               fn (addr string) !&net.TcpConn = unsafe { nil }
+	dialer               fn (addr string) !&net.TcpConn @[required]
 	url                  string
 	pool_size            int
 	min_idle_connections int
@@ -94,7 +94,7 @@ fn (opts Options) init() !ParsedOptions {
 		username:             username
 		password:             password
 		db:                   db
-		dialer:               new_dialer(address)
+		dialer:               new_default_dialer()
 		pool_size:            pool_size
 		min_idle_connections: opts.min_idle_connections
 		max_idle_connections: opts.max_idle_connections
@@ -102,9 +102,9 @@ fn (opts Options) init() !ParsedOptions {
 	}
 }
 
-fn new_dialer(address string) fn (address string) !&net.TcpConn {
-	return fn [address] (addr string) !&net.TcpConn {
-		return net.dial_tcp(addr)!
+fn new_default_dialer() fn (string) !&net.TcpConn {
+	return fn (s string) !&net.TcpConn {
+		return net.dial_tcp(s)!
 	}
 }
 
@@ -117,3 +117,4 @@ fn private_new_connection_pool(opts ParsedOptions) &ConnectionPool {
 	}
 	return new_connection_pool(pool_opts)
 }
+
