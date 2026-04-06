@@ -55,8 +55,7 @@ fn (mut rd ProtoReader) read_string_reply(line string) !Value {
 	match n {
 		int {
 			// read exactly n+2 bytes from rd.buf into b
-			n_plus_2 := n + 2
-			mut b := []u8{len: n_plus_2}
+			mut b := []u8{len: n + 2}
 			rd.reader.read(mut b)!
 			return b.bytestr().trim_string_right(resp_crlf)
 		}
@@ -101,22 +100,22 @@ fn (mut rd ProtoReader) discard(line string) ! {
 	n := reply_len(line)!
 	match n {
 		int {
-			n_plus_2 := n + 2
-			n_by_2 := n * 2
 			if line.starts_with(resp_blob_error) || line.starts_with(resp_string)
 				|| line.starts_with(resp_verbatim) {
 				// Skip over the next n+2 bytes
-				mut discarded := []u8{cap: n_plus_2}
+				mut discarded := []u8{cap: n + 2}
 				_ := rd.reader.read(mut discarded)!
 			}
+
 			if line.starts_with(resp_array) || line.starts_with(resp_set)
 				|| line.starts_with(resp_push) {
 				for i := 0; i < n; i++ {
 					rd.discard_next()!
 				}
 			}
+
 			if line.starts_with(resp_map) || line.starts_with(resp_attr) {
-				for i := 0; i < n_by_2; i++ {
+				for i := 0; i < n * 2; i++ {
 					rd.discard_next()!
 				}
 			}
@@ -217,11 +216,10 @@ fn (mut rd ProtoReader) read_verb(line string) !Value {
 	s := rd.read_string_reply(line)!
 	match s {
 		string {
-			st := s
-			if st.len < 4 || (st.len >= 4 && st[3] != `:`) {
+			if s.len < 4 || (s.len >= 4 && s[3] != `:`) {
 				return error(format_error_message("Can't parse verbatim string reply: ${line}"))
 			}
-			return st[4..]
+			return s[4..]
 		}
 		Nil {
 			return s
@@ -403,11 +401,10 @@ fn (mut rd ProtoReader) read_map_len() !Value {
 				n := reply_len(line)!
 				match n {
 					int {
-						len := n
-						if len % 2 != 0 {
+						if n % 2 != 0 {
 							return error(format_error_message('The length of the array must be a multiple of 2, got: ${n}'))
 						}
-						return len / 2
+						return n / 2
 					}
 					Nil {
 						return n

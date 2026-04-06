@@ -26,15 +26,11 @@ pub struct ConnectionPool {
 	opts  PoolOptions
 	queue chan int
 mut:
-	// connections contains the currently active connections.
-	connections []&PoolConnection
-	// idle_connections contains the currently available connections.
-	idle_connections []&PoolConnection
-	// idle_connections_length is the number of currently available connections.
-	idle_connections_length int
-	// pool_size is the current number of connections in the pool.
-	pool_size int
-	mutex     &sync.Mutex
+	connections             []&PoolConnection // active connections
+	idle_connections        []&PoolConnection // available connections
+	idle_connections_length int               // number of available connections
+	pool_size               int               // number of connections in the pool
+	mutex                   &sync.Mutex
 }
 
 fn new_connection_pool(opts PoolOptions) &ConnectionPool {
@@ -57,6 +53,7 @@ fn (mut cp ConnectionPool) check_min_idle_connections() {
 	if cp.opts.min_idle_connections == 0 {
 		return
 	}
+
 	for cp.pool_size < cp.opts.pool_size
 		&& cp.idle_connections_length < cp.opts.min_idle_connections {
 		if cp.queue.len < cp.queue.cap {
