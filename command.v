@@ -89,7 +89,7 @@ fn (mut cmd BaseCmd) set_error(e IError) {
 	cmd.error = e
 }
 
-fn (cmd &BaseCmd) error() ! {
+pub fn (cmd &BaseCmd) error() ! {
 	if error := cmd.error {
 		return error
 	}
