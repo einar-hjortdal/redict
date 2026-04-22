@@ -6,13 +6,14 @@ pub interface Cmder {
 	name() string
 	full_name() string
 	args() []Value
-	arg_string(int) string
+	string_arg(int) string
 	first_key_pos() int
-	val() Value
 	// read_timeout() time.Duration
+	error() !
 mut:
 	read_reply(mut rd ProtoReader) !
 	set_first_key_pos(int)
+	set_error(IError)
 }
 
 fn write_cmds(mut wr ProtoWriter, cmds []Cmder) ! {
@@ -28,17 +29,18 @@ fn write_cmd(mut wr ProtoWriter, cmd Cmder) ! {
 struct BaseCmd {
 	args []Value
 mut:
+	error   ?IError
 	key_pos int
 }
 
-pub fn (cmd BaseCmd) name() string {
+pub fn (cmd &BaseCmd) name() string {
 	if cmd.args.len == 0 {
 		return ''
 	}
-	return to_lower(cmd.arg_string(0))
+	return to_lower(cmd.string_arg(0))
 }
 
-pub fn (cmd BaseCmd) full_name() string {
+pub fn (cmd &BaseCmd) full_name() string {
 	mut name := cmd.name()
 	match name {
 		'cluster', 'command' {
@@ -56,11 +58,11 @@ pub fn (cmd BaseCmd) full_name() string {
 	}
 }
 
-pub fn (cmd BaseCmd) args() []Value {
+pub fn (cmd &BaseCmd) args() []Value {
 	return cmd.args
 }
 
-fn (cmd BaseCmd) arg_string(pos int) string {
+fn (cmd &BaseCmd) string_arg(pos int) string {
 	if pos < 0 || pos >= cmd.args.len {
 		return ''
 	}
@@ -75,12 +77,22 @@ fn (cmd BaseCmd) arg_string(pos int) string {
 	}
 }
 
-fn (cmd BaseCmd) first_key_pos() int {
+fn (cmd &BaseCmd) first_key_pos() int {
 	return cmd.key_pos
 }
 
 fn (mut cmd BaseCmd) set_first_key_pos(key_pos int) {
 	cmd.key_pos = key_pos
+}
+
+fn (mut cmd BaseCmd) set_error(e IError) {
+	cmd.error = e
+}
+
+fn (cmd &BaseCmd) error() ! {
+	if error := cmd.error {
+		return error
+	}
 }
 
 struct Cmd {
@@ -103,39 +115,43 @@ fn new_int_cmd(args ...Value) &IntCmd {
 	}
 }
 
-pub fn (cmd IntCmd) val() Value {
+pub fn (cmd &IntCmd) value() i64 {
 	return cmd.val
+}
+
+pub fn (cmd &IntCmd) result() !i64 {
+	error := cmd.error or { return cmd.val }
+	return error
 }
 
 fn (mut cmd IntCmd) read_reply(mut rd ProtoReader) ! {
 	v := rd.read_int()!
-	match v {
-		i64 {
-			cmd.val = v
-		}
-		else {
-			return RedictError{
-				msg: format_error_message('IntCmd.read_reply: ProtoReader.read_int returned unexpected type')
-			}
-		}
-	}
+	cmd.val = v
 }
 
 pub struct StatusCmd {
 	BaseCmd
 mut:
-	val Value
+	val string
 }
 
 fn new_status_cmd(args ...Value) &StatusCmd {
 	return &StatusCmd{
 		args: args
-		val:  Nil{}
 	}
 }
 
-pub fn (cmd StatusCmd) val() Value {
+pub fn (mut cmd StatusCmd) set_value(value string) {
+	cmd.val = value
+}
+
+pub fn (cmd &StatusCmd) value() string {
 	return cmd.val
+}
+
+pub fn (cmd &StatusCmd) result() !string {
+	error := cmd.error or { return cmd.val }
+	return error
 }
 
 fn (mut cmd StatusCmd) read_reply(mut rd ProtoReader) ! {
@@ -156,8 +172,13 @@ fn new_bool_cmd(args ...Value) &BoolCmd {
 	}
 }
 
-pub fn (cmd BoolCmd) val() Value {
+pub fn (cmd &BoolCmd) value() bool {
 	return cmd.val
+}
+
+pub fn (cmd &BoolCmd) result() !bool {
+	error := cmd.error or { return cmd.val }
+	return error
 }
 
 fn (mut cmd BoolCmd) read_reply(mut rd ProtoReader) ! {
@@ -172,18 +193,22 @@ fn (mut cmd BoolCmd) read_reply(mut rd ProtoReader) ! {
 pub struct StringCmd {
 	BaseCmd
 mut:
-	val Value
+	val string
 }
 
 fn new_string_cmd(args ...Value) &StringCmd {
 	return &StringCmd{
 		args: args
-		val:  Nil{}
 	}
 }
 
-pub fn (cmd StringCmd) val() Value {
+pub fn (cmd &StringCmd) value() string {
 	return cmd.val
+}
+
+pub fn (cmd &StringCmd) result() !string {
+	error := cmd.error or { return cmd.val }
+	return error
 }
 
 fn (mut cmd StringCmd) read_reply(mut rd ProtoReader) ! {
@@ -202,37 +227,30 @@ fn new_map_string_value_cmd(args ...Value) &MapStringValueCmd {
 	}
 }
 
-pub fn (cmd MapStringValueCmd) val() Value {
+pub fn (cmd &MapStringValueCmd) val() Value {
 	return cmd.val
 }
 
 fn (mut cmd MapStringValueCmd) read_reply(mut rd ProtoReader) ! {
 	n := rd.read_map_len()!
-	match n {
-		int {
-			cmd.val = map[string]Value{}
-			for i := 0; i < n; i += 1 {
-				// so far it works
-				k := rd.read_string()!
-				match k {
-					string {
-						v := rd.read_reply() or {
-							cmd.val[k] = err as Value // error: cannot implement interface `redict.Value` with a different interface `IError`
-							continue
-							// if error is a protocol error, set cmd.val[k] as the error.
-						}
-						cmd.val[k] = v
-					}
-					else {
-						return error(format_error_message('MapStringValueCmd.read_reply: ProtoReader.read_string returned unexpect type'))
-					}
-				}
+	cmd.val = map[string]Value{}
+	for i := 0; i < n; i += 1 {
+		k := rd.read_string()!
+		v := rd.read_reply() or {
+			if is_nil(err) {
+				cmd.val[k] = redict_nil
+				continue
 			}
-		}
-		else {
-			return RedictError{
-				msg: format_error_message('MapStringValueCmd.read_reply: ProtoReader.read_map_len returned unexpect type')
+
+			if is_error(err) {
+				cmd.val[k] = err
+				continue
 			}
+
+			return err
 		}
+
+		cmd.val[k] = v
 	}
 }
+

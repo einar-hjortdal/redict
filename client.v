@@ -7,7 +7,7 @@ struct BaseClient {
 	options ParsedOptions
 mut:
 	connection_pool &Pooler
-	on_close        fn () ! = unsafe { nil }
+	on_close        ?fn () !
 }
 
 fn (mut c BaseClient) new_connection() !&PoolConnection {
@@ -45,15 +45,13 @@ fn (mut c BaseClient) init_connection(mut cn PoolConnection) ! {
 	}
 	cn.initialized = true
 
-	username := c.options.username
-	password := c.options.password
 	mut cp := new_single_connection_pool(mut c.connection_pool, mut cn)
 	mut conn := new_connection(c.options, mut cp)
 
-	conn.hello(3, username, password, 'einar_hjortdal.redict')!
+	conn.hello(3, c.options.username, c.options.password, 'einar_hjortdal.redict')
 
 	if c.options.db > 0 {
-		conn.select_db(c.options.db)!
+		conn.select_db(c.options.db)
 	}
 }
 
@@ -114,18 +112,18 @@ fn (mut c BaseClient) close() ! {
 @[heap]
 pub struct Client {
 	BaseClient
-	Cmdable
+	CmdableFn
 }
 
 // new_client returns a client according to the specified Options.
 pub fn new_client(options Options) !&Client {
-	po := options.init()!
+	o := options.init()!
 
 	mut c := &Client{
-		options:         po
-		connection_pool: private_new_connection_pool(po)
+		options:         o
+		connection_pool: private_new_connection_pool(o)
 	}
-	c.cmdable_function = c.process
+	c.CmdableFn = c.process
 	return c
 }
 
@@ -138,8 +136,8 @@ fn (mut c Client) process(mut cmd Cmder) ! {
 @[heap]
 pub struct Connection {
 	BaseClient
-	Cmdable
-	CmdableStateful
+	CmdableFn
+	StatefulCmdableFn
 }
 
 fn new_connection(po ParsedOptions, mut cp Pooler) &Connection {
@@ -147,11 +145,12 @@ fn new_connection(po ParsedOptions, mut cp Pooler) &Connection {
 		options:         po
 		connection_pool: cp
 	}
-	c.cmdable_function = c.process
-	c.cmdable_stateful_function = c.process
+	c.CmdableFn = c.process
+	c.StatefulCmdableFn = c.process
 	return c
 }
 
 fn (mut c Connection) process(mut cmd Cmder) ! {
 	c.BaseClient.process(mut cmd)!
 }
+

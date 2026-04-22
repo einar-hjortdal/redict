@@ -9,57 +9,55 @@ fn setup_cmdable_client() !&Client {
 
 fn test_ping() {
 	mut client := setup_cmdable_client()!
-	r := client.ping()!
-	v, v_is_nil := r.val().get_string()!
+	r := client.ping()
+	v := r.value()
 	assert v == 'PONG'
-	assert !v_is_nil
 }
 
 fn test_get_unset() {
 	client := setup_cmdable_client()!
-	r := client.get('set_key')!
-	v := r.val()
-	assert v is Nil
+	r := client.get('set_key')
+	r.result() or { assert is_nil(err) }
 }
 
 fn test_set_and_get() {
 	client := setup_cmdable_client()!
-	client.set('set_key', 'test_value', 60 * time.second)!
-	get_res := client.get('set_key')!
-	v := get_res.val()
-	assert v is string && v == 'test_value'
+	client.set('set_key', 'test_value', 60 * time.second)
+	get_res := client.get('set_key')
+	v := get_res.value()
+	assert v == 'test_value'
 }
 
 fn test_del() {
 	client := setup_cmdable_client()!
-	client.set('set_key', 'test_value', 60 * time.second)!
-	del_res := client.del('set_key')!
-	assert del_res.val() is i64 && del_res.val() == 1 // deleted one value
+	client.set('set_key', 'test_value', 60 * time.second)
+	del_res := client.del('set_key')
+	assert del_res.value() == 1
 
-	get_res := client.get('set_key')!
-	assert get_res.val() is Nil
+	get_res := client.get('set_key')
+	get_res.result() or { assert is_nil(err) }
 }
 
 fn test_expire() {
 	client := setup_cmdable_client()!
-	client.set('set_key', 'test_value', 60 * time.second)!
-	client.expire('set_key', 0 * time.second)!
-	get_res := client.get('set_key')!
-	assert get_res.val() is Nil
+	client.set('set_key', 'test_value', 60 * time.second)
+	client.expire('set_key', 0 * time.second)
+	get_res := client.get('set_key')
+	get_res.result() or { assert is_nil(err) }
 }
 
 fn test_hset() {
 	client := setup_cmdable_client()!
 	a := [Value('some key'), 'some value', 'last key', 'last value']
-	hset_res := client.hset('hash_key', a)!
+	hset_res := client.hset('hash_key', a)
 }
 
 fn test_hget() {
 	client := setup_cmdable_client()!
 	a := [Value('some key'), 'some value']
-	client.hset('hash_key', a)!
-	hget_res := client.hget('hash_key', 'some key')!
-	assert hget_res.val() is string && hget_res.val() == 'some value'
+	client.hset('hash_key', a)
+	hget_res := client.hget('hash_key', 'some key')
+	assert hget_res.value() == 'some value'
 }
 
 fn setup_stateful_cmdable_client() !&Client {
@@ -76,10 +74,11 @@ fn test_hello() {
 	client := setup_stateful_cmdable_client()!
 
 	// Check authentication
-	mut res := client.ping()!
-	assert res.val() is string && res.val() == 'PONG'
+	mut res := client.ping()
+	assert res.value() == 'PONG'
 
 	// Check RESP 3 nil replies
-	get_nil_res := client.get('hello_key')!
-	assert get_nil_res.val() is Nil
+	get_nil_res := client.get('hello_key')
+	get_nil_res.result() or { assert is_nil(err) }
 }
+

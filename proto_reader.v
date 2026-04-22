@@ -18,61 +18,50 @@ fn new_reader(mut io_reader io.Reader) &ProtoReader {
 	}
 }
 
-// Should return string or Nil or RedictError.
-fn (mut rd ProtoReader) read_line() !Value {
+fn (mut rd ProtoReader) read_line() !string {
 	l := rd.read()!
 
-	if l.starts_with(resp_error) {
-		return RedictError{
-			msg: l.trim_string_right(resp_error)
+	match l[0].str() {
+		resp_error {
+			return RedictError{
+				msg: l.trim_string_right(resp_error.str())
+			}
 		}
-	}
-
-	if l.starts_with(resp_nil) {
-		return Nil{}
-	}
-
-	if l.starts_with(resp_blob_error) {
-		return rd.read_string_reply(l)!
-	}
-
-	// Discard attribute type
-	if l.starts_with(resp_attr) {
-		rd.discard(l)!
-		return rd.read_line()!
+		resp_nil {
+			return redict_nil
+		}
+		resp_blob_error {
+			blob_error := rd.read_string_reply(l)!
+			return new_redict_error(blob_error)
+		}
+		resp_attr {
+			rd.discard(l)!
+			return rd.read_line()
+		}
+		else {} // TODO default
 	}
 
 	return l
 }
 
 fn (mut rd ProtoReader) read() !string {
-	return rd.reader.read_line() // note: read_line trims the final `\n` (seems like it trims \r\n)
+	return rd.reader.read_line() // note: read_line trims the final `\n` and `\r\n`
 }
 
 // Should return string or Nil or RedictError.
-fn (mut rd ProtoReader) read_string_reply(line string) !Value {
+fn (mut rd ProtoReader) read_string_reply(line string) !string {
 	n := reply_len(line)!
-	match n {
-		int {
-			// read exactly n+2 bytes from rd.buf into b
-			mut b := []u8{len: n + 2}
-			rd.reader.read(mut b)!
-			return b.bytestr().trim_string_right(resp_crlf)
-		}
-		Nil {
-			return n
-		}
-		else {
-			return error(format_error_message('ProtoReader.read_string_reply: reply_len returned unexpect type'))
-		}
-	}
+	// read exactly n+2 bytes from rd.buf into b
+	mut b := []u8{len: n + 2}
+	rd.reader.read(mut b)!
+	return b.bytestr().trim_string_right(resp_crlf)
 }
 
-fn reply_len(line string) !Value {
+fn reply_len(line string) !int {
 	n := strconv.atoi(line[1..])!
 
 	if n < -1 {
-		return error(format_error_message('Invalid reply: ${line}'))
+		return new_redict_error('Invalid reply: ${line}')
 	}
 
 	if line.starts_with(resp_string) || line.starts_with(resp_verbatim)
@@ -80,7 +69,7 @@ fn reply_len(line string) !Value {
 		|| line.starts_with(resp_set) || line.starts_with(resp_push) || line.starts_with(resp_map)
 		|| line.starts_with(resp_attr) {
 		if n == -1 {
-			return Nil{} // TODO is this RESP2?
+			return redict_nil // TODO is this RESP2?
 		}
 	}
 	return n
@@ -88,44 +77,34 @@ fn reply_len(line string) !Value {
 
 fn (mut rd ProtoReader) discard(line string) ! {
 	if line.len == 0 {
-		return error(format_error_message('Invalid line'))
+		return new_redict_error('Invalid line')
 	}
 
-	if line.starts_with(resp_status) || line.starts_with(resp_error) || line.starts_with(resp_int)
-		|| line.starts_with(resp_nil) || line.starts_with(resp_float) || line.starts_with(resp_bool)
-		|| line.starts_with(resp_big_int) {
-		return
+	match line[0].str() {
+		resp_status, resp_error, resp_int, resp_nil, resp_float, resp_bool, resp_big_int {
+			return
+		}
+		else {}
 	}
 
 	n := reply_len(line)!
-	match n {
-		int {
-			if line.starts_with(resp_blob_error) || line.starts_with(resp_string)
-				|| line.starts_with(resp_verbatim) {
-				// Skip over the next n+2 bytes
-				mut discarded := []u8{cap: n + 2}
-				_ := rd.reader.read(mut discarded)!
-			}
-
-			if line.starts_with(resp_array) || line.starts_with(resp_set)
-				|| line.starts_with(resp_push) {
-				for i := 0; i < n; i++ {
-					rd.discard_next()!
-				}
-			}
-
-			if line.starts_with(resp_map) || line.starts_with(resp_attr) {
-				for i := 0; i < n * 2; i++ {
-					rd.discard_next()!
-				}
+	match line[0].str() {
+		resp_blob_error, resp_string, resp_verbatim {
+			// Skip over the next n+2 bytes
+			mut discarded := []u8{cap: n + 2}
+			_ := rd.reader.read(mut discarded)!
+		}
+		resp_array, resp_set, resp_push {
+			for i := 0; i < n; i++ {
+				rd.discard_next()!
 			}
 		}
-		Nil {
-			return
+		resp_map, resp_attr {
+			for i := 0; i < n * 2; i++ {
+				rd.discard_next()!
+			}
 		}
-		else {
-			return error(format_error_message('ProtoReader.discard: reply_len returned unexpect type'))
-		}
+		else {}
 	}
 
 	return error("Can't parse ${line}")
@@ -139,45 +118,38 @@ fn (mut rd ProtoReader) discard_next() ! {
 // read_reply parses the data returned by read_line()
 fn (mut rd ProtoReader) read_reply() !Value {
 	line := rd.read_line()!
-	match line {
-		string {
-			if line.starts_with(resp_status) {
-				return line.trim_string_left(resp_status)
-			}
-			if line.starts_with(resp_int) {
-				return strconv.parse_int(line.trim_string_left(resp_int), 10, 64)!
-			}
-			if line.starts_with(resp_float) {
-				return rd.read_float(line)!
-			}
-			if line.starts_with(resp_bool) {
-				return rd.private_read_bool(line)!
-			}
-			// if line.starts_with(resp_big_int) {
-			// 	return rd.read_big_int(line)!
-			// }
-			if line.starts_with(resp_string) {
-				return rd.read_string_reply(line)!
-			}
-			if line.starts_with(resp_verbatim) {
-				return rd.read_verb(line)!
-			}
-			if line.starts_with(resp_array) || line.starts_with(resp_set)
-				|| line.starts_with(resp_push) {
-				return rd.read_slice(line)!
-			}
-			if line.starts_with(resp_map) {
-				return rd.read_map(line)!
-			}
+	match line[0].str() {
+		resp_status {
+			return line.trim_string_left(resp_status)
 		}
-		Nil {
-			return line
+		resp_int {
+			return strconv.parse_int(line.trim_string_left(resp_int), 10, 64)!
+		}
+		resp_float {
+			return rd.read_float(line)!
+		}
+		resp_bool {
+			return rd.private_read_bool(line)!
+		}
+		// resp_big_int {
+		// 	return rd.read_big_int(line)!
+		// }
+		resp_string {
+			return rd.read_string_reply(line)!
+		}
+		resp_verbatim {
+			return rd.read_verb(line)!
+		}
+		resp_array, resp_set, resp_push {
+			return rd.read_slice(line)!
+		}
+		resp_map {
+			return rd.read_map(line)
 		}
 		else {
-			return error(format_error_message('ProtoReader.read_reply: ProtoReader.read_line returned an Unexpected type'))
+			return new_redict_error("ProtoReader.read_reply: Can't parse ${line}")
 		}
 	}
-	return error(format_error_message("ProtoReader.read_reply: Can't parse ${line}"))
 }
 
 fn (rd ProtoReader) read_float(line string) !f64 {
@@ -200,7 +172,7 @@ fn (rd ProtoReader) private_read_bool(line string) !bool {
 	if line[1..] == 'f' {
 		return false
 	}
-	return error(format_error_message("Can't parse bool reply: ${line}"))
+	return new_redict_error("Can't parse bool reply: ${line}")
 }
 
 // fn (rd ProtoReader) read_big_int(line string) !big.Integer {
@@ -212,218 +184,123 @@ fn (rd ProtoReader) private_read_bool(line string) !bool {
 // }
 
 // Should return string or Nil or RedictError.
-fn (mut rd ProtoReader) read_verb(line string) !Value {
+fn (mut rd ProtoReader) read_verb(line string) !string {
 	s := rd.read_string_reply(line)!
-	match s {
-		string {
-			if s.len < 4 || (s.len >= 4 && s[3] != `:`) {
-				return error(format_error_message("Can't parse verbatim string reply: ${line}"))
-			}
-			return s[4..]
-		}
-		Nil {
-			return s
-		}
-		else {
-			return error(format_error_message('ProtoReader.read_verb: Reader.read_string_reply returned unexpect type'))
-		}
+	if s.len < 4 || (s.len >= 4 && s[3] != `:`) {
+		return new_redict_error("Can't parse verbatim string reply: ${line}")
 	}
+	return s[4..]
 }
 
 fn (mut rd ProtoReader) read_slice(line string) ![]Value {
 	n := reply_len(line)!
-	match n {
-		int {
-			mut val := []Value{len: n, init: Nil{}}
-			for i := 0; i < n; i++ {
-				v := rd.read_reply() or { Value(RedictError{
-					msg: err.msg()
-				}) }
-				val[i] = v
-			}
-			return val
-		}
-		else {
-			return error(format_error_message('ProtoReader.read_map: ProtoReader.read_reply returned unexpect type'))
-		}
+	mut val := []Value{len: n, init: Value('')}
+	for i := 0; i < n; i++ {
+		v := rd.read_reply() or { Value(RedictError{
+			msg: err.msg()
+		}) }
+		val[i] = v
 	}
+	return val
 }
 
 // Should return map[string]Value, Nil or RedictError
 fn (mut rd ProtoReader) read_map(line string) !Value {
 	n := reply_len(line)!
-	match n {
-		int {
-			mut m := map[string]Value{}
-			for i := 0; i < n; i++ {
-				k := rd.read_reply()! // expected string
-				match k {
-					string {
-						v := rd.read_reply()! // read_reply does not currently return errors
-						m[k] = v
-					}
-					else {
-						return error(format_error_message('ProtoReader.read_map: ProtoReader.read_reply returned unexpect type'))
-					}
-				}
+	mut m := map[string]Value{}
+	for i := 0; i < n; i++ {
+		k := rd.read_reply()! // expected string
+		match k {
+			string {
+				v := rd.read_reply()! // read_reply does not currently return errors
+				m[k] = v
 			}
-			return m
-		}
-		Nil {
-			return n
-		}
-		else {
-			return RedictError{
-				msg: format_error_message('ProtoReader.read_map: reply_len returned unexpect type')
+			else {
+				return new_redict_error('ProtoReader.read_map: ProtoReader.read_reply returned unexpect type')
 			}
 		}
 	}
+	return m
 }
 
 // Should return string or Nil or RedictError
-fn (mut rd ProtoReader) read_string() !Value {
-	line := rd.read_line() or { return RedictError{
+fn (mut rd ProtoReader) read_string() !string {
+	l := rd.read_line() or { return RedictError{
 		msg: err.msg()
 	} }
 
-	match line {
-		string {
-			if line.starts_with(resp_status) {
-				return line.trim_string_left(resp_status)
-			}
-			if line.starts_with(resp_int) {
-				return line.trim_string_left(resp_int)
-			}
-			if line.starts_with(resp_float) {
-				return line.trim_string_left(resp_float)
-			}
-			if line.starts_with(resp_string) {
-				return rd.read_string_reply(line)!
-			}
-			if line.starts_with(resp_bool) {
-				b := rd.private_read_bool(line)!
-				return '${b}'
-			}
-			if line.starts_with(resp_verbatim) {
-				return rd.read_verb(line)!
-			}
-			// if line.starts_with(resp_big_int) {
-			// 	b := rd.read_big_int(line)!
-			// 	return '${b}'
-			// }
+	match l[0].str() {
+		resp_status, resp_int, resp_float {
+			return l[1..]
 		}
-		Nil {
-			return line
+		resp_string {
+			return rd.read_string_reply(l)
 		}
+		resp_bool {
+			b := rd.private_read_bool(l)!
+			return '${b}'
+		}
+		resp_verbatim {
+			return rd.read_verb(l)!
+		}
+		// resp_big_int {
+		// 	b := rd.read_big_int(line)!
+		// 	return '${b}'
+		// }
 		else {
-			return error(format_error_message('ProtoReader.read_string: ProtoReader.read_line returned an Unexpected type'))
+			return new_redict_error("ProtoReader.read_string: Can't parse reply ${l} reading string")
 		}
 	}
-
-	return error(format_error_message("ProtoReader.read_string: Can't parse reply ${line} reading string"))
 }
 
 fn (mut rd ProtoReader) read_bool() !bool {
 	s := rd.read_string() or { return false }
-	match s {
-		string {
-			return s == 'OK' || s == '1' || s == 'true'
-		}
-		else {
-			return error(format_error_message('ProtoReader.read_bool: Reader.read_string returned unexpect type'))
-		}
-	}
+	return s == 'OK' || s == '1' || s == 'true'
 }
 
-// Should return int or Nil or RedictError
-fn (mut rd ProtoReader) read_int() !Value {
-	line := rd.read_line() or { return RedictError{
-		msg: err.msg()
-	} }
-
-	match line {
-		string {
-			if line.starts_with(resp_status) {
-				return strconv.parse_int(line.trim_string_left(resp_status), 10, 64)!
-			}
-			if line.starts_with(resp_int) {
-				return strconv.parse_int(line.trim_string_left(resp_int), 10, 64)!
-			}
-			if line.starts_with(resp_string) {
-				i := rd.read_string_reply(line)!
-				match i {
-					string {
-						return strconv.parse_int(i, 10, 64)!
-					}
-					Nil {
-						return i
-					}
-					else {
-						return RedictError{
-							msg: format_error_message('ProtoReader.read_int: ProtoReader.read_string_reply returned unexpect type')
-						}
-					}
-				}
-			}
-			// if line.starts_with(resp_big_int) {
-			// 	b := rd.read_big_int(line)!
-			// 	return '${b}'
-			// }
-			// 	if b !is i64 {
-			// 		error("big_int ${b} value out of range")
-			// 	}
-			// 	return b.Int64() or ProtoNil
-			// }
-		}
-		Nil {
-			return line
-		}
-		else {}
-	}
-	return error(format_error_message("Can't parse int reply: ${line}"))
-}
-
-// read_map_len reads the length of the map type.
-// Should return int or Nil or RedictError.
-// If responding to the array type (RespArray/RespSet/RespPush), it must be a multiple of 2 and return
-// n/2. Other types will return an error.
-fn (mut rd ProtoReader) read_map_len() !Value {
+fn (mut rd ProtoReader) read_int() !i64 {
 	line := rd.read_line()!
 
-	match line {
-		string {
-			if line.starts_with(resp_map) {
-				return reply_len(line)!
-			}
-			if line.starts_with(resp_array) || line.starts_with(resp_set)
-				|| line.starts_with(resp_push) {
-				// Some commands may respond to array types.
-				n := reply_len(line)!
-				match n {
-					int {
-						if n % 2 != 0 {
-							return error(format_error_message('The length of the array must be a multiple of 2, got: ${n}'))
-						}
-						return n / 2
-					}
-					Nil {
-						return n
-					}
-					else {
-						return RedictError{
-							msg: format_error_message('ProtoReader.read_int: ProtoReader.read_string_reply returned unexpect type')
-						}
-					}
-				}
-			}
+	match line[0].str() {
+		resp_int, resp_status {
+			return strconv.parse_int(line[1..], 10, 64)!
 		}
-		Nil {
-			return line
+		resp_string {
+			i := rd.read_string_reply(line)!
+			return strconv.parse_int(i, 10, 64)!
 		}
+		// resp_big_int {
+		// 	b := rd.read_big_int(line)!
+		// 	return '${b}'
+		// }
+		// 	if b !is i64 {
+		// 		error("big_int ${b} value out of range")
+		// 	}
+		// 	return b.Int64() or ProtoNil
+		// }
 		else {
-			return error(format_error_message('ProtoReader.read_map_len: Reader.read_string returned unexpect type'))
+			return new_redict_error("Can't parse int reply: ${line}")
 		}
 	}
-	return error(format_error_message("Can't parse map reply: ${line}"))
+}
+
+fn (mut rd ProtoReader) read_map_len() !int {
+	line := rd.read_line()!
+	match line[0].str() {
+		resp_map {
+			return reply_len(line)!
+		}
+		resp_array, resp_set, resp_push {
+			// Some commands may respond to array types.
+			n := reply_len(line)!
+			if n % 2 != 0 {
+				return new_redict_error('The length of the array must be a multiple of 2, got: ${n}')
+			}
+			return n / 2
+		}
+		else {
+			return new_redict_error("Can't parse map reply: ${line}")
+		}
+	}
 }
 

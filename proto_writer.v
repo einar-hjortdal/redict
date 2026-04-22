@@ -20,6 +20,13 @@ fn new_writer(mut io_writer io.Writer) &ProtoWriter {
 	}
 }
 
+fn (mut wr ProtoWriter) write_len(n int) ! {
+	wr.buf_len = []u8{} // TODO reset consistently with reader
+	wr.buf_len << strconv.format_int(n, 10).bytes()
+	wr.buf_len << resp_crlf.bytes()
+	wr.writer.write(wr.buf_len)!
+}
+
 fn (mut wr ProtoWriter) write_args(args []Value) ! {
 	wr.writer.write(resp_array.bytes())!
 	wr.write_len(args.len)!
@@ -55,13 +62,6 @@ fn (mut wr ProtoWriter) write_arg(v Value) ! {
 			return error('Cannot marshal ${v}')
 		}
 	}
-}
-
-fn (mut wr ProtoWriter) write_len(n int) ! {
-	wr.buf_len = []u8{} // TODO reset consistently with reader
-	wr.buf_len << strconv.format_int(n, 10).bytes()
-	wr.buf_len << resp_crlf.bytes()
-	wr.writer.write(wr.buf_len)!
 }
 
 fn (mut wr ProtoWriter) write_bytes(b []u8) ! {
