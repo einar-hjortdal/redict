@@ -284,6 +284,18 @@ fn (mut rd ProtoReader) read_int() !i64 {
 	}
 }
 
+fn (mut rd ProtoReader) read_array_len() !int {
+	line := rd.read_line()!
+	match line[0].str() {
+		resp_array, resp_set, resp_push {
+			return reply_len(line)
+		}
+		else {
+			return new_redict_error("can't parse array/set/push reply: ${line}")
+		}
+	}
+}
+
 fn (mut rd ProtoReader) read_map_len() !int {
 	line := rd.read_line()!
 	match line[0].str() {

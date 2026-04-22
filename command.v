@@ -158,7 +158,7 @@ fn (mut cmd StatusCmd) read_reply(mut rd ProtoReader) ! {
 	cmd.val = rd.read_string()!
 }
 
-struct BoolCmd {
+pub struct BoolCmd {
 	BaseCmd
 mut:
 	val bool
@@ -215,7 +215,7 @@ fn (mut cmd StringCmd) read_reply(mut rd ProtoReader) ! {
 	cmd.val = rd.read_string()!
 }
 
-struct MapStringValueCmd {
+pub struct MapStringValueCmd {
 	BaseCmd
 mut:
 	val map[string]Value
@@ -251,6 +251,41 @@ fn (mut cmd MapStringValueCmd) read_reply(mut rd ProtoReader) ! {
 		}
 
 		cmd.val[k] = v
+	}
+}
+
+pub struct StringSliceCmd {
+	BaseCmd
+mut:
+	val []string
+}
+
+fn new_string_slice_cmd(args ...Value) &StringSliceCmd {
+	return &StringSliceCmd{
+		args: args
+	}
+}
+
+pub fn (cmd &StringSliceCmd) value() []string {
+	return cmd.val
+}
+
+pub fn (cmd &StringSliceCmd) result() ![]string {
+	error := cmd.error or { return cmd.val }
+	return error
+}
+
+fn (mut cmd StringSliceCmd) read_reply(mut rd ProtoReader) ! {
+	n := rd.read_array_len()!
+	cmd.val = []string{len: n}
+	for i := 0; i < n; i++ {
+		s := rd.read_string() or {
+			if is_nil(err) {
+				continue
+			}
+			return err
+		}
+		cmd.val[i] = s
 	}
 }
 
