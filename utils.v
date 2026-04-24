@@ -20,19 +20,19 @@ pub fn (re RedictError) code() int {
 	return 0 // not using codes. Implements IError
 }
 
+fn format_error_message(message string) string {
+	return '${redict_error_prefix} ${message}'
+}
+
 fn new_redict_error(msg string) RedictError {
 	return RedictError{
-		msg: msg
+		msg: format_error_message(msg)
 	}
 }
 
 const redict_error_prefix = '[${lib}]:'
 
-fn format_error_message(message string) string {
-	return '${redict_error_prefix} ${message}'
-}
-
-pub const redict_nil = new_redict_error(format_error_message('nil'))
+pub const redict_nil = new_redict_error('nil')
 
 pub fn is_error(err IError) bool {
 	return err.msg().starts_with(redict_error_prefix)

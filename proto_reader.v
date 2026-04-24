@@ -23,9 +23,7 @@ fn (mut rd ProtoReader) read_line() !string {
 
 	match l[0].str() {
 		resp_error {
-			return RedictError{
-				msg: l.trim_string_right(resp_error.str())
-			}
+			return new_redict_error(l.trim_string_right(resp_error.str()))
 		}
 		resp_nil {
 			return redict_nil
@@ -48,7 +46,6 @@ fn (mut rd ProtoReader) read() !string {
 	return rd.reader.read_line() // note: read_line trims the final `\n` and `\r\n`
 }
 
-// Should return string or Nil or RedictError.
 fn (mut rd ProtoReader) read_string_reply(line string) !string {
 	n := reply_len(line)!
 	// read exactly n+2 bytes from rd.buf into b
@@ -144,7 +141,7 @@ fn (mut rd ProtoReader) read_reply() !Value {
 			return rd.read_slice(line)!
 		}
 		resp_map {
-			return rd.read_map(line)
+			return rd.read_map(line)!
 		}
 		else {
 			return new_redict_error("ProtoReader.read_reply: Can't parse ${line}")
@@ -183,7 +180,6 @@ fn (rd ProtoReader) private_read_bool(line string) !bool {
 // 	}
 // }
 
-// Should return string or Nil or RedictError.
 fn (mut rd ProtoReader) read_verb(line string) !string {
 	s := rd.read_string_reply(line)!
 	if s.len < 4 || (s.len >= 4 && s[3] != `:`) {
@@ -192,27 +188,54 @@ fn (mut rd ProtoReader) read_verb(line string) !string {
 	return s[4..]
 }
 
-fn (mut rd ProtoReader) read_slice(line string) ![]Value {
+fn (mut rd ProtoReader) read_slice(line string) ![]?Value {
 	n := reply_len(line)!
-	mut val := []Value{len: n, init: Value('')}
+	mut val := []?Value{len: n, init: none}
 	for i := 0; i < n; i++ {
-		v := rd.read_reply() or { Value(RedictError{
-			msg: err.msg()
-		}) }
+		v := rd.read_reply() or {
+			match err {
+				RedictError {
+					if is_nil(err) {
+						val[i] = none
+						continue
+					}
+
+					val[i] = err
+					continue
+				}
+				else {
+					return err
+				}
+			}
+		}
 		val[i] = v
 	}
 	return val
 }
 
-// Should return map[string]Value, Nil or RedictError
-fn (mut rd ProtoReader) read_map(line string) !Value {
+fn (mut rd ProtoReader) read_map(line string) !map[string]?Value {
 	n := reply_len(line)!
-	mut m := map[string]Value{}
+	mut m := map[string]?Value{}
 	for i := 0; i < n; i++ {
-		k := rd.read_reply()! // expected string
+		k := rd.read_reply()!
 		match k {
 			string {
-				v := rd.read_reply()! // read_reply does not currently return errors
+				v := rd.read_reply() or {
+					match err {
+						RedictError {
+							if is_nil(err) {
+								m[k] = none
+								continue
+							}
+
+							m[k] = err
+							continue
+						}
+						else {
+							return err
+						}
+					}
+				}
 				m[k] = v
 			}
 			else {
@@ -223,11 +246,8 @@ fn (mut rd ProtoReader) read_map(line string) !Value {
 	return m
 }
 
-// Should return string or Nil or RedictError
 fn (mut rd ProtoReader) read_string() !string {
-	l := rd.read_line() or { return RedictError{
-		msg: err.msg()
-	} }
+	l := rd.read_line()!
 
 	match l[0].str() {
 		resp_status, resp_int, resp_float {
@@ -254,7 +274,7 @@ fn (mut rd ProtoReader) read_string() !string {
 }
 
 fn (mut rd ProtoReader) read_bool() !bool {
-	s := rd.read_string() or { return false }
+	s := rd.read_string()!
 	return s == 'OK' || s == '1' || s == 'true'
 }
 
