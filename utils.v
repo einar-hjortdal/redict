@@ -42,44 +42,6 @@ pub fn is_nil(err IError) bool {
 	return err.msg() == redict_nil.msg()
 }
 
-pub fn (value Value) is_nil() bool {
-	match value {
-		IError {
-			return is_nil(value)
-		}
-		else {
-			return false
-		}
-	}
-}
-
-// Returns the string contained in v, also returns true if v is Nil.
-// Returns and error if v is not a string.
-pub fn (v Value) get_string() !(string, bool) {
-	match v {
-		string {
-			return v, false
-		}
-		Nil {
-			return '', true
-		}
-		RedictError {
-			return v
-		}
-		else {
-			return error(format_error_message('Value is not string'))
-		}
-	}
-}
-
-fn to_lower(s string) string {
-	if s.is_lower() {
-		return s
-	} else {
-		return s.to_lower()
-	}
-}
-
 fn use_precise(duration time.Duration) bool {
 	return duration < time.second || duration % time.second != 0
 }

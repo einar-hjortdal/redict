@@ -12,23 +12,23 @@ interface StatefulCmdable {
 	swap_db(index1 int, index2 int) &StatusCmd
 }
 
-type StatefulCmdableFn = fn (cmd &Cmder) !
+type StatefulCmdableFn = fn (mut cmd Cmder) !
 
 pub fn (c StatefulCmdableFn) auth(password string) &StatusCmd {
 	mut cmd := new_status_cmd('auth', password)
-	c(cmd) or {}
+	c(mut cmd) or {}
 	return cmd
 }
 
 pub fn (c StatefulCmdableFn) auth_acl(username string, password string) &StatusCmd {
 	mut cmd := new_status_cmd('auth', username, password)
-	c(cmd) or {}
+	c(mut cmd) or {}
 	return cmd
 }
 
 pub fn (c StatefulCmdableFn) client_set_name(name string) &BoolCmd {
 	mut cmd := new_bool_cmd('client', 'setname', name)
-	c(cmd) or {}
+	c(mut cmd) or {}
 	return cmd
 }
 
@@ -47,20 +47,20 @@ pub fn (c StatefulCmdableFn) hello(protover int, username string, password strin
 	}
 	mut cmd := new_map_string_value_cmd(...args)
 
-	c(cmd) or {}
+	c(mut cmd) or {}
 	return cmd
 }
 
 // It is called `select_db` because `select` is a reserved keyword.
 pub fn (c StatefulCmdableFn) select_db(index int) &StatusCmd {
 	mut cmd := new_status_cmd('select', index)
-	c(cmd) or {}
+	c(mut cmd) or {}
 	return cmd
 }
 
 pub fn (c StatefulCmdableFn) swap_db(index1 int, index2 int) &StatusCmd {
 	mut cmd := new_status_cmd('swapdb', index1, index2)
-	c(cmd) or {}
+	c(mut cmd) or {}
 	return cmd
 }
 

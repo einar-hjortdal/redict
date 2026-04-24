@@ -1,6 +1,5 @@
 module redict
 
-import arrays
 import net
 
 struct BaseClient {
@@ -59,9 +58,9 @@ fn (mut c BaseClient) release_connection(mut cn PoolConnection) ! {
 	c.connection_pool.put(mut cn)!
 }
 
-fn (mut c BaseClient) with_connection(func fn (mut PoolConnection) !) ! {
+fn (mut c BaseClient) with_connection(f fn (mut PoolConnection) !) ! {
 	mut cn := c.get_connection()!
-	func(mut cn) or {
+	f(mut cn) or {
 		c.release_connection(mut cn)!
 		return err
 	}
@@ -72,33 +71,36 @@ fn (mut c BaseClient) dial(address string) !&net.TcpConn {
 	return c.options.dialer(address)
 }
 
-fn (mut c BaseClient) process(mut cmd Cmder) ! {
-	mut errors := []IError{}
-	for attempt := 0; attempt <= c.options.max_retries; attempt++ {
-		c.attempt_process(mut cmd) or {
-			errors = arrays.concat(errors, err)
-			if attempt == c.options.max_retries {
-				return err
-			} else {
-				continue
-			}
-		}
-		break
-	}
-	if errors.len > 0 {
-		return errors[errors.len - 1]
-	}
-}
-
 fn (mut c BaseClient) attempt_process(mut cmd Cmder) ! {
 	c.with_connection(fn [mut cmd] (mut pc PoolConnection) ! {
 		pc.with_writer(fn [cmd] (mut wr ProtoWriter) ! {
 			write_cmd(mut wr, cmd)!
 		})!
-		pc.with_reader(fn [mut cmd] (mut rd ProtoReader) ! {
-			cmd.read_reply(mut rd)!
-		})!
+		pc.with_reader(cmd.read_reply)!
 	})!
+}
+
+fn (mut c BaseClient) process(mut cmd Cmder) ! {
+	mut last_error := ?IError(none)
+	for attempt := 0; attempt <= c.options.max_retries; attempt++ {
+		if attempt > 0 {
+			// TODO sleep before retry
+		}
+
+		c.attempt_process(mut cmd) or {
+			if attempt == c.options.max_retries {
+				return err
+			} else {
+				last_error = err
+				continue
+			}
+		}
+		break
+	}
+
+	if err := last_error {
+		return err
+	}
 }
 
 // close closes the client, releasing any open resources.
@@ -128,7 +130,10 @@ pub fn new_client(options Options) !&Client {
 }
 
 fn (mut c Client) process(mut cmd Cmder) ! {
-	c.BaseClient.process(mut cmd)!
+	c.BaseClient.process(mut cmd) or {
+		cmd.set_error(err)
+		return err
+	}
 }
 
 // Connection represents a single connection rather than a pool of connections. A Connection is used
@@ -151,6 +156,9 @@ fn new_connection(po ParsedOptions, mut cp Pooler) &Connection {
 }
 
 fn (mut c Connection) process(mut cmd Cmder) ! {
-	c.BaseClient.process(mut cmd)!
+	c.BaseClient.process(mut cmd) or {
+		cmd.set_error(err)
+		return err
+	}
 }
 

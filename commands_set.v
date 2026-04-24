@@ -13,14 +13,14 @@ pub fn (c CmdableFn) sadd(key string, members ...Value) &IntCmd {
 	args[0] = 'sadd'
 	args[1] = key
 	args = arrays.concat(args, ...members)
-	cmd := new_int_cmd(...args)
-	c(cmd) or {}
+	mut cmd := new_int_cmd(...args)
+	c(mut cmd) or {}
 	return cmd
 }
 
 pub fn (c CmdableFn) smembers(key string) &StringSliceCmd {
-	cmd := new_string_slice_cmd('smembers', key)
-	c(cmd) or {}
+	mut cmd := new_string_slice_cmd('smembers', key)
+	c(mut cmd) or {}
 	return cmd
 }
 
@@ -29,8 +29,8 @@ pub fn (c CmdableFn) srem(key string, members ...Value) &IntCmd {
 	args[0] = 'srem'
 	args[1] = key
 	args = arrays.concat(args, ...members)
-	cmd := new_int_cmd(...args)
-	c(cmd) or {}
+	mut cmd := new_int_cmd(...args)
+	c(mut cmd) or {}
 	return cmd
 }
 

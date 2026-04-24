@@ -21,8 +21,8 @@ pub fn (c CmdableFn) del(keys ...string) &IntCmd {
 		args[1 + i] = key
 	}
 
-	cmd := new_int_cmd(...args)
-	c(cmd) or {}
+	mut cmd := new_int_cmd(...args)
+	c(mut cmd) or {}
 	return cmd
 }
 
@@ -55,8 +55,8 @@ fn (c CmdableFn) private_expire(key string, expiration time.Duration, mode strin
 		args = arrays.concat(args, mode)
 	}
 
-	cmd := new_bool_cmd(...args)
-	c(cmd) or {}
+	mut cmd := new_bool_cmd(...args)
+	c(mut cmd) or {}
 	return cmd
 }
 

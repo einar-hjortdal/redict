@@ -16,14 +16,14 @@ pub fn (c CmdableFn) hdel(key string, fields ...string) &IntCmd {
 		args[2 + i] = field
 	}
 
-	cmd := new_int_cmd(...args)
-	c(cmd) or {}
+	mut cmd := new_int_cmd(...args)
+	c(mut cmd) or {}
 	return cmd
 }
 
 pub fn (c CmdableFn) hget(key string, index string) &StringCmd {
-	cmd := new_string_cmd('hget', key, index)
-	c(cmd) or {}
+	mut cmd := new_string_cmd('hget', key, index)
+	c(mut cmd) or {}
 	return cmd
 }
 
@@ -36,8 +36,8 @@ pub fn (c CmdableFn) hset(key string, values ...Value) &IntCmd {
 		args[2 + i] = value
 	}
 
-	cmd := new_int_cmd(...args)
-	c(cmd) or {}
+	mut cmd := new_int_cmd(...args)
+	c(mut cmd) or {}
 	return cmd
 }
 

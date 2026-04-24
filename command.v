@@ -13,7 +13,7 @@ pub interface Cmder {
 mut:
 	read_reply(mut rd ProtoReader) !
 	set_first_key_pos(int)
-	set_error(IError)
+	set_error(err IError)
 }
 
 fn write_cmds(mut wr ProtoWriter, cmds []Cmder) ! {
@@ -37,7 +37,7 @@ pub fn (cmd &BaseCmd) name() string {
 	if cmd.args.len == 0 {
 		return ''
 	}
-	return to_lower(cmd.string_arg(0))
+	return cmd.string_arg(0)
 }
 
 pub fn (cmd &BaseCmd) full_name() string {
@@ -85,8 +85,8 @@ fn (mut cmd BaseCmd) set_first_key_pos(key_pos int) {
 	cmd.key_pos = key_pos
 }
 
-fn (mut cmd BaseCmd) set_error(e IError) {
-	cmd.error = e
+fn (mut cmd BaseCmd) set_error(err IError) {
+	cmd.error = IError(err) // https://github.com/vlang/v/issues/26973
 }
 
 pub fn (cmd &BaseCmd) error() ! {

@@ -8,16 +8,11 @@ interface Cmdable {
 	ping() &StatusCmd
 }
 
-type CmdableFn = fn (cmd &Cmder) !
-
-// to get around @[required]
-fn placeholder_cmdable_fn(cmd &Cmder) ! {
-	return error('placeholder CmdableFn was called')
-}
+type CmdableFn = fn (mut cmd Cmder) !
 
 pub fn (c CmdableFn) ping() &StatusCmd {
-	cmd := new_status_cmd('ping')
-	c(cmd) or {}
+	mut cmd := new_status_cmd('ping')
+	c(mut cmd) or {}
 	return cmd
 }
 
