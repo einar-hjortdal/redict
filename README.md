@@ -1,4 +1,4 @@
-<span style="background-color: #226f54; font-size: 125%; padding-top: 1.25%; padding-right: 2.5%; padding-bottom: 1.25%; padding-left: 2.5%; border-radius: 25px;">This project is active: new features are being developed, bugs are being fixed.</span>
+This project is active: new features are being developed, bugs are being fixed.
 
 # redict
 
@@ -42,7 +42,7 @@ println(result.val())
 
 ```bash
 # Start a Redict container
-sudo docker run \
+docker run \
   --rm \
   --detach \
   --name=redict \
