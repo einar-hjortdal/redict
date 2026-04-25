@@ -9,7 +9,8 @@ pub const lib = 'redict'
 pub interface Value {}
 
 pub struct RedictError {
-	msg string
+	msg    string
+	is_nil bool
 }
 
 pub fn (re RedictError) msg() string {
@@ -18,6 +19,10 @@ pub fn (re RedictError) msg() string {
 
 pub fn (re RedictError) code() int {
 	return 0 // not using codes. Implements IError
+}
+
+pub fn (re RedictError) is_nil() bool {
+	return re.is_nil
 }
 
 fn format_error_message(message string) string {
@@ -30,16 +35,30 @@ fn new_redict_error(msg string) RedictError {
 	}
 }
 
+fn new_nil() RedictError {
+	return RedictError{
+		msg:    format_error_message('nil')
+		is_nil: true
+	}
+}
+
 const redict_error_prefix = '[${lib}]:'
 
-pub const redict_nil = new_redict_error('nil')
+pub const redict_nil = new_nil()
 
 pub fn is_error(err IError) bool {
 	return err.msg().starts_with(redict_error_prefix)
 }
 
 pub fn is_nil(err IError) bool {
-	return err.msg() == redict_nil.msg()
+	match err {
+		RedictError {
+			return err.is_nil()
+		}
+		else {
+			return false
+		}
+	}
 }
 
 fn use_precise(duration time.Duration) bool {

@@ -72,11 +72,14 @@ fn (mut c BaseClient) dial(address string) !&net.TcpConn {
 }
 
 fn (mut c BaseClient) attempt_process(mut cmd Cmder) ! {
-	c.with_connection(fn [mut cmd] (mut pc PoolConnection) ! {
-		pc.with_writer(fn [cmd] (mut wr ProtoWriter) ! {
-			write_cmd(mut wr, cmd)!
+	mut cmd_ref := unsafe { &cmd } // TODO can unsafe be removed?
+	c.with_connection(fn [mut cmd_ref] (mut pc PoolConnection) ! {
+		pc.with_writer(fn [cmd_ref] (mut wr ProtoWriter) ! {
+			write_cmd(mut wr, cmd_ref)!
 		})!
-		pc.with_reader(cmd.read_reply)!
+		pc.with_reader(fn [mut cmd_ref] (mut rd ProtoReader) ! { // forced to use a closure here, passing cmd_ref.read_reply doesn't mutate cmd_ref
+			cmd_ref.read_reply(mut rd)!
+		})!
 	})!
 }
 

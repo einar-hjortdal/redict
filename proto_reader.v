@@ -21,9 +21,9 @@ fn new_reader(mut io_reader io.Reader) &ProtoReader {
 fn (mut rd ProtoReader) read_line() !string {
 	l := rd.read()!
 
-	match l[0].str() {
+	match l[0].ascii_str() {
 		resp_error {
-			return new_redict_error(l.trim_string_right(resp_error.str()))
+			return new_redict_error(l.trim_string_right(resp_error))
 		}
 		resp_nil {
 			return redict_nil
@@ -77,7 +77,7 @@ fn (mut rd ProtoReader) discard(line string) ! {
 		return new_redict_error('Invalid line')
 	}
 
-	match line[0].str() {
+	match line[0].ascii_str() {
 		resp_status, resp_error, resp_int, resp_nil, resp_float, resp_bool, resp_big_int {
 			return
 		}
@@ -85,7 +85,7 @@ fn (mut rd ProtoReader) discard(line string) ! {
 	}
 
 	n := reply_len(line)!
-	match line[0].str() {
+	match line[0].ascii_str() {
 		resp_blob_error, resp_string, resp_verbatim {
 			// Skip over the next n+2 bytes
 			mut discarded := []u8{cap: n + 2}
@@ -115,7 +115,7 @@ fn (mut rd ProtoReader) discard_next() ! {
 // read_reply parses the data returned by read_line()
 fn (mut rd ProtoReader) read_reply() !Value {
 	line := rd.read_line()!
-	match line[0].str() {
+	match line[0].ascii_str() {
 		resp_status {
 			return line.trim_string_left(resp_status)
 		}
@@ -249,7 +249,7 @@ fn (mut rd ProtoReader) read_map(line string) !map[string]?Value {
 fn (mut rd ProtoReader) read_string() !string {
 	l := rd.read_line()!
 
-	match l[0].str() {
+	match l[0].ascii_str() {
 		resp_status, resp_int, resp_float {
 			return l[1..]
 		}
@@ -281,7 +281,7 @@ fn (mut rd ProtoReader) read_bool() !bool {
 fn (mut rd ProtoReader) read_int() !i64 {
 	line := rd.read_line()!
 
-	match line[0].str() {
+	match line[0].ascii_str() {
 		resp_int, resp_status {
 			return strconv.parse_int(line[1..], 10, 64)!
 		}
@@ -306,7 +306,7 @@ fn (mut rd ProtoReader) read_int() !i64 {
 
 fn (mut rd ProtoReader) read_array_len() !int {
 	line := rd.read_line()!
-	match line[0].str() {
+	match line[0].ascii_str() {
 		resp_array, resp_set, resp_push {
 			return reply_len(line)
 		}
@@ -318,7 +318,7 @@ fn (mut rd ProtoReader) read_array_len() !int {
 
 fn (mut rd ProtoReader) read_map_len() !int {
 	line := rd.read_line()!
-	match line[0].str() {
+	match line[0].ascii_str() {
 		resp_map {
 			return reply_len(line)!
 		}
