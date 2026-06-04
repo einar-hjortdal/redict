@@ -28,15 +28,14 @@ Please follow these standards
 - No logical assignment operators.
 - No static methods.
 - No lambdas.
-- No `@[required]` attribute in struct definitions.
 - Use `arrays.concat` instead of `<<`.
 
 ### veb
 
 - `object_` files contain request/response data structures and related functions.
 - `route_` files define endpoints, validate request inputs and send responses.
-- `conduit_` files orchestrate database operations operations.
-- `model_` files define individual database operations.
+- `module conduit` orchestrates database operations.
+- `module record` defines individual database operations.
 
 ### FirebirdSQL
 

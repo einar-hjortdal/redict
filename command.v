@@ -86,7 +86,7 @@ fn (mut cmd BaseCmd) set_first_key_pos(key_pos int) {
 }
 
 fn (mut cmd BaseCmd) set_error(err IError) {
-	cmd.error = IError(err) // https://github.com/vlang/v/issues/26973
+	cmd.error = err
 }
 
 pub fn (cmd &BaseCmd) error() ! {

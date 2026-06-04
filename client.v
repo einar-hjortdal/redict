@@ -77,9 +77,7 @@ fn (mut c BaseClient) attempt_process(mut cmd Cmder) ! {
 		pc.with_writer(fn [cmd_ref] (mut wr ProtoWriter) ! {
 			write_cmd(mut wr, cmd_ref)!
 		})!
-		pc.with_reader(fn [mut cmd_ref] (mut rd ProtoReader) ! { // forced to use a closure here, passing cmd_ref.read_reply doesn't mutate cmd_ref
-			cmd_ref.read_reply(mut rd)!
-		})!
+		pc.with_reader(cmd_ref.read_reply)!
 	})!
 }
 

@@ -217,7 +217,7 @@ fn (mut p ConnectionPool) close() ! {
 	p.mutex.unlock()
 }
 
-fn (mut cp ConnectionPool) remove(mut pc PoolConnection, reason string) {
+fn (mut cp ConnectionPool) remove(mut pc PoolConnection, _ string) {
 	cp.remove_connection_with_lock(mut pc)
 	cp.free_turn()
 	cp.close_connection(mut pc) or {}
@@ -260,9 +260,9 @@ fn (mut scp SingleConnectionPool) get() !&PoolConnection {
 	return scp.connection
 }
 
-fn (mut scp SingleConnectionPool) put(mut cn PoolConnection) ! {}
+fn (mut scp SingleConnectionPool) put(mut _ PoolConnection) ! {}
 
-fn (mut scp SingleConnectionPool) remove(mut cn PoolConnection, reason string) {
+fn (mut scp SingleConnectionPool) remove(mut _ PoolConnection, reason string) {
 	scp.sticky_error = reason
 }
 
