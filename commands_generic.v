@@ -6,6 +6,7 @@ import arrays
 // https://redict.io/docs/commands/#generic
 pub interface GenericCmdable {
 	del(keys ...string) &IntCmd
+	exists(keys ...string) &IntCmd
 	expire(key string, expiration time.Duration) &BoolCmd
 	expire_nx(key string, expiration time.Duration) &BoolCmd
 	expire_xx(key string, expiration time.Duration) &BoolCmd
@@ -16,6 +17,19 @@ pub interface GenericCmdable {
 pub fn (c CmdableFn) del(keys ...string) &IntCmd {
 	mut args := []Value{len: 1 + keys.len, init: Value('')}
 	args[0] = 'del'
+	for i := 0; i < keys.len; i++ {
+		key := keys[i]
+		args[1 + i] = key
+	}
+
+	mut cmd := new_int_cmd(...args)
+	c(mut cmd) or {}
+	return cmd
+}
+
+pub fn (c CmdableFn) exists(keys ...string) &IntCmd {
+	mut args := []Value{len: 1 + keys.len, init: Value('')}
+	args[0] = 'exists'
 	for i := 0; i < keys.len; i++ {
 		key := keys[i]
 		args[1 + i] = key
