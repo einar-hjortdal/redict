@@ -20,4 +20,3 @@ fn test_hello() {
 	// Check RESP 3 nil replies
 	client.get('hello_key').result() or { assert is_nil(err) }
 }
-

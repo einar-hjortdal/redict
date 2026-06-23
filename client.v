@@ -162,4 +162,3 @@ fn (mut c Connection) process(mut cmd Cmder) ! {
 		return err
 	}
 }
-

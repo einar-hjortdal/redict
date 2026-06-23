@@ -59,4 +59,3 @@ fn (c CmdableFn) private_expire(key string, expiration time.Duration, mode strin
 	c(mut cmd) or {}
 	return cmd
 }
-

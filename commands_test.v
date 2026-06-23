@@ -90,7 +90,7 @@ fn test_del() {
 fn test_expire() {
 	client := setup_cmdable_client()!
 	client.set('set_key', 'test_value', 60 * time.second).result()!
-	client.expire('set_key', 0 * time.second)
+	client.expire('set_key', 0 * time.second).result()!
 	client.get('set_key').result() or { assert redict.is_nil(err) }
 }
 

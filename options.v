@@ -117,4 +117,3 @@ fn private_new_connection_pool(opts ParsedOptions) &ConnectionPool {
 	}
 	return new_connection_pool(pool_opts)
 }
-

@@ -78,4 +78,3 @@ fn format_sec(duration time.Duration) i64 {
 	}
 	return i64(duration / time.second)
 }
-

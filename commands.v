@@ -15,4 +15,3 @@ pub fn (c CmdableFn) ping() &StatusCmd {
 	c(mut cmd) or {}
 	return cmd
 }
-

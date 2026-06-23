@@ -40,4 +40,3 @@ pub fn (c CmdableFn) hset(key string, values ...Value) &IntCmd {
 	c(mut cmd) or {}
 	return cmd
 }
-

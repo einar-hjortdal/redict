@@ -288,4 +288,3 @@ fn (mut cmd StringSliceCmd) read_reply(mut rd ProtoReader) ! {
 		cmd.val[i] = s
 	}
 }
-

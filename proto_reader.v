@@ -335,4 +335,3 @@ fn (mut rd ProtoReader) read_map_len() !int {
 		}
 	}
 }
-

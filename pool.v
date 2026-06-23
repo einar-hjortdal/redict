@@ -56,21 +56,23 @@ fn (mut cp ConnectionPool) check_min_idle_connections() {
 
 	for cp.pool_size < cp.opts.pool_size
 		&& cp.idle_connections_length < cp.opts.min_idle_connections {
-		if cp.queue.len < cp.queue.cap {
-			cp.queue <- 0
-			cp.pool_size++
-			cp.idle_connections_length++
+		select {
+			cp.queue <- 0 {
+				cp.pool_size++
+				cp.idle_connections_length++
 
-			go fn [mut cp] () {
-				cp.add_idle_connection() or { return }
-				cp.mutex.@lock()
-				cp.pool_size--
-				cp.idle_connections_length--
-				cp.mutex.unlock()
-				cp.free_turn()
-			}()
-		} else {
-			return
+				go fn [mut cp] () {
+					cp.add_idle_connection() or { return }
+					cp.mutex.@lock()
+					cp.pool_size--
+					cp.idle_connections_length--
+					cp.mutex.unlock()
+					cp.free_turn()
+				}()
+			}
+			else {
+				return
+			}
 		}
 	}
 }
@@ -269,4 +271,3 @@ fn (mut scp SingleConnectionPool) remove(mut _ PoolConnection, reason string) {
 fn (mut scp SingleConnectionPool) close() ! {
 	scp.sticky_error = 'closed'
 }
-

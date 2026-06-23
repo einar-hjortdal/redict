@@ -36,4 +36,3 @@ pub fn (c CmdableFn) set(key string, value Value, expiration time.Duration) &Sta
 	c(mut cmd) or {}
 	return cmd
 }
-

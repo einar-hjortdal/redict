@@ -63,4 +63,3 @@ pub fn (c StatefulCmdableFn) swap_db(index1 int, index2 int) &StatusCmd {
 	c(mut cmd) or {}
 	return cmd
 }
-
