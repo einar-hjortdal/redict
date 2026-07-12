@@ -19,13 +19,13 @@ interface StringCmdable {
 	// mget(keys ...string) &SliceCmd
 	mset(values ...Value) &StatusCmd
 	msetnx(values ...Value) &BoolCmd
-	// psetex
+	psetex(key string, expiration time.Duration, value Value) &StatusCmd
 	set(key string, value Value, expiration time.Duration) &StatusCmd
 	setex(key string, value Value, expiration time.Duration) &StatusCmd
 	setnx(key string, value Value, expiration time.Duration) &BoolCmd
 	setrange(key string, offset i64, value string) &IntCmd
 	strlen(key string) &IntCmd
-	// substr
+	substr(key string, start i64, end i64) &StringCmd
 }
 
 pub fn (c CmdableFn) append(key string, value string) &IntCmd {
@@ -121,6 +121,11 @@ pub fn (c CmdableFn) msetnx(key string, values ...Value) &BoolCmd {
 	return cmd
 }
 
+// deprecated since 2.16.12, equivalent to set with px
+pub fn (c CmdableFn) psetex(key string, expiration time.Duration, value Value) &StatusCmd {
+	return c.set(key, value, expiration)
+}
+
 // set issues a `SET key value [expiration]` command.
 // Zero expiration means the key has no expiration time.
 pub fn (c CmdableFn) set(key string, value Value, expiration time.Duration) &StatusCmd {
@@ -183,4 +188,9 @@ pub fn (c CmdableFn) strlen(key string) &IntCmd {
 	mut cmd := new_int_cmd('setrange', key)
 	c(mut cmd) or {}
 	return cmd
+}
+
+// deprecated since 2.0.0, equivalent to getrange
+pub fn (c CmdableFn) substr(key string, start i64, end i64) &StringCmd {
+	return c.getrange(key, start, end)
 }
