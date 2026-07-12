@@ -8,6 +8,8 @@ pub const lib = 'redict'
 
 pub interface Value {}
 
+struct Empty {}
+
 pub struct RedictError {
 	msg    string
 	is_nil bool
