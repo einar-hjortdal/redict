@@ -149,6 +149,25 @@ fn (mut rd ProtoReader) read_reply() !Value {
 	}
 }
 
+fn (mut rd ProtoReader) parse_float() !f64 {
+	line := rd.read_line()!
+	match line[0].ascii_str() {
+		resp_float {
+			return rd.read_float(line)
+		}
+		resp_status {
+			return line[1..].f64() // TODO error if can't convert
+		}
+		resp_string {
+			s := rd.read_string_reply(line)!
+			return s.f64() // TODO error if can't convert
+		}
+		else {
+			return new_redict_error("ProtoReader.read_reply: Can't parse float reply ${line}")
+		}
+	}
+}
+
 fn (rd ProtoReader) read_float(line string) !f64 {
 	if line[1..] == 'inf' {
 		return math.inf(1)

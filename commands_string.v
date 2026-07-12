@@ -14,7 +14,7 @@ interface StringCmdable {
 	getset(key string, value Value) &StringCmd
 	incr(key string) &IntCmd
 	incrby(key string, value i64) &IntCmd
-	// incrbyfloat(key string, value f64) &FloatCmd
+	incrbyfloat(key string, value f64) &FloatCmd
 	// lcs(q &LCSQuery) &LCSCmd
 	// mget(keys ...string) &SliceCmd
 	mset(values ...Value) &StatusCmd
@@ -99,6 +99,12 @@ pub fn (c CmdableFn) incr(key string) &IntCmd {
 
 pub fn (c CmdableFn) incrby(key string, value i64) &IntCmd {
 	mut cmd := new_int_cmd('incrby', key, value)
+	c(mut cmd) or {}
+	return cmd
+}
+
+pub fn (c CmdableFn) incrbyfloat(key string, value f64) &FloatCmd {
+	mut cmd := new_float_cmd('incrbyfloat', key, value)
 	c(mut cmd) or {}
 	return cmd
 }

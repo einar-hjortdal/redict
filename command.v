@@ -215,6 +215,31 @@ fn (mut cmd StringCmd) read_reply(mut rd ProtoReader) ! {
 	cmd.val = rd.read_string()!
 }
 
+pub struct FloatCmd {
+	BaseCmd
+mut:
+	val f64
+}
+
+fn new_float_cmd(args ...Value) &FloatCmd {
+	return &FloatCmd{
+		args: args
+	}
+}
+
+pub fn (cmd &FloatCmd) value() f64 {
+	return cmd.val
+}
+
+pub fn (cmd &FloatCmd) result() !f64 {
+	error := cmd.error or { return cmd.val }
+	return error
+}
+
+fn (mut cmd FloatCmd) read_reply(mut rd ProtoReader) ! {
+	cmd.val = rd.parse_float()!
+}
+
 pub struct MapStringValueCmd {
 	BaseCmd
 mut:
