@@ -156,11 +156,11 @@ fn (mut rd ProtoReader) parse_float() !f64 {
 			return rd.read_float(line)
 		}
 		resp_status {
-			return line[1..].f64() // TODO error if can't convert
+			return strconv.atof64(line[1..])!
 		}
 		resp_string {
 			s := rd.read_string_reply(line)!
-			return s.f64() // TODO error if can't convert
+			return strconv.atof64(s)!
 		}
 		else {
 			return new_redict_error("ProtoReader.read_reply: Can't parse float reply ${line}")
