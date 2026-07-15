@@ -28,10 +28,23 @@ result = client.get('test_key')!
 println(result.val())
 ```
 
-## Objectives 
+## Features
 
-- Provide a driver for [Redict](https://redict.io/)
+- Connection pool
+- Supported commands:
+  - [generic](./commands_generic.v)
+  - [hash](./commands_hash.v)
+  - [set](./commands_set.v)
+  - [string](./commands_string.v)
+
+## Objectives
+
 - Support all [Redict commands](https://redict.io/docs/commands/)
+- [Pub/Sub](https://redict.io/docs/usage/pubsub/)
+- [Transactions](https://redict.io/docs/usage/transactions/)
+- [Pipelines](https://redict.io/docs/usage/pipelining/)
+- [Redict Sentinel](https://redict.io/docs/usage/sentinel/)
+- [Redict Cluster](https://redict.io/docs/usage/scaling/)
 - Provide utility functions
 
 ## Development
