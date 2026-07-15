@@ -137,6 +137,12 @@ fn (mut c Client) process(mut cmd Cmder) ! {
 	}
 }
 
+pub fn (mut c Client) do(args ...Value) &Cmd {
+	mut cmd := new_cmd(...args)
+	c.process(mut cmd) or {}
+	return cmd
+}
+
 // Connection represents a single connection rather than a pool of connections. A Connection is used
 // to start a new client and should not be used unless strictly necessary.
 @[heap]

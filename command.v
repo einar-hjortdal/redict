@@ -95,10 +95,30 @@ pub fn (cmd &BaseCmd) error() ! {
 	}
 }
 
-struct Cmd {
+pub struct Cmd {
 	BaseCmd
 mut:
 	val Value
+}
+
+fn new_cmd(args ...Value) &Cmd {
+	return &Cmd{
+		args: args
+		val:  Empty{}
+	}
+}
+
+pub fn (cmd &Cmd) value() Value {
+	return cmd.val
+}
+
+pub fn (cmd &Cmd) result() !Value {
+	error := cmd.error or { return cmd.val }
+	return error
+}
+
+fn (mut cmd Cmd) read_reply(mut rd ProtoReader) ! {
+	cmd.val = rd.read_reply()!
 }
 
 pub struct IntCmd {

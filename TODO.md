@@ -31,7 +31,6 @@
 
 ## Cmdable
 
-- Add `do` API to issue unsupported commands
 - Gracefully handle errors when issuing commands on a server that requires authentication while not 
   being authenticated.
 
