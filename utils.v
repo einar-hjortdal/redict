@@ -1,6 +1,7 @@
 module redict
 
 import time
+import strings
 
 const keep_ttl = -1
 
@@ -79,4 +80,19 @@ fn format_sec(duration time.Duration) i64 {
 		return 1
 	}
 	return i64(duration / time.second)
+}
+
+fn replace_spaces(s string) string {
+	mut res := strings.new_builder(s.len)
+	for _, c in s {
+		match c {
+			` ` {
+				res.write_rune(`-`)
+			}
+			else {
+				res.write_rune(c)
+			}
+		}
+	}
+	return res.str()
 }
