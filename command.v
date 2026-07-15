@@ -314,6 +314,35 @@ fn (mut cmd StringSliceCmd) read_reply(mut rd ProtoReader) ! {
 	}
 }
 
+pub struct IntSliceCmd {
+	BaseCmd
+mut:
+	val []i64
+}
+
+fn new_int_slice_cmd(args ...Value) &IntSliceCmd {
+	return &IntSliceCmd{
+		args: args
+	}
+}
+
+pub fn (cmd &IntSliceCmd) value() []i64 {
+	return cmd.val
+}
+
+pub fn (cmd &IntSliceCmd) result() ![]i64 {
+	error := cmd.error or { return cmd.val }
+	return error
+}
+
+fn (mut cmd IntSliceCmd) read_reply(mut rd ProtoReader) ! {
+	n := rd.read_array_len()!
+	cmd.val = []i64{len: 0, cap: n}
+	for i := 0; i < n; i++ {
+		cmd.val << rd.read_int()!
+	}
+}
+
 pub struct DurationCmd {
 	BaseCmd
 mut:
@@ -348,5 +377,36 @@ fn (mut cmd DurationCmd) read_reply(mut rd ProtoReader) ! {
 		else {
 			cmd.val = time.Duration(n) * cmd.precision
 		}
+	}
+}
+
+pub struct MapStringStringCmd {
+	BaseCmd
+mut:
+	val map[string]string
+}
+
+fn new_map_string_string_cmd(args ...Value) &MapStringStringCmd {
+	return &MapStringStringCmd{
+		args: args
+	}
+}
+
+pub fn (cmd &MapStringStringCmd) value() map[string]string {
+	return cmd.val
+}
+
+pub fn (cmd &MapStringStringCmd) result() !map[string]string {
+	error := cmd.error or { return cmd.val }
+	return error
+}
+
+fn (mut cmd MapStringStringCmd) read_reply(mut rd ProtoReader) ! {
+	n := rd.read_map_len()!
+
+	for i := 0; i < n; i++ {
+		key := rd.read_string()!
+		value := rd.read_string()!
+		cmd.val[key] = value
 	}
 }

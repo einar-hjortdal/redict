@@ -4,15 +4,19 @@ import time
 
 // https://redict.io/docs/commands/#generic
 pub interface GenericCmdable {
+	copy(sourceKey string, destKey string, db int, replace bool) &IntCmd
+	copyreplace(sourceKey string, destKey string, db int, replace bool) &IntCmd
 	del(keys ...string) &IntCmd
 	dump(key string) &StringCmd
 	exists(keys ...string) &IntCmd
+
 	expire(key string, expiration time.Duration) &BoolCmd
 	expireat(key string, t time.Time) &BoolCmd
 	expiregt(key string, expiration time.Duration) &BoolCmd
 	expirelt(key string, expiration time.Duration) &BoolCmd
 	expirenx(key string, expiration time.Duration) &BoolCmd
 	expirexx(key string, expiration time.Duration) &BoolCmd
+
 	expiretime(key string) &DurationCmd
 	keys(pattern string) &StringSliceCmd
 	// migrate
@@ -31,6 +35,8 @@ pub interface GenericCmdable {
 	renamenx(key string, newkey string) &BoolCmd
 	restore(key string, ttl time.Duration, value string) &BoolCmd
 	restorereplace(key string, ttl time.Duration, value string) &StatusCmd
+	// scan
+	// scantype
 	// sort
 	// sortro
 	// sortstore
@@ -38,10 +44,9 @@ pub interface GenericCmdable {
 	touch(keys ...string) &IntCmd
 	ttl(key string) &DurationCmd
 	type(key string) &StatusCmd
-	copy(sourceKey string, destKey string, db int, replace bool) &IntCmd
-	copyreplace(sourceKey string, destKey string, db int, replace bool) &IntCmd
-	// scan
-	// scantype
+	// unlink
+	// wait
+	// waitaof
 }
 
 pub fn (c CmdableFn) del(keys ...string) &IntCmd {
