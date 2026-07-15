@@ -1,6 +1,6 @@
 module redict
 
-// import time
+import time
 
 pub interface Cmder {
 	name() string
@@ -311,5 +311,42 @@ fn (mut cmd StringSliceCmd) read_reply(mut rd ProtoReader) ! {
 			return err
 		}
 		cmd.val[i] = s
+	}
+}
+
+pub struct DurationCmd {
+	BaseCmd
+mut:
+	val       time.Duration
+	precision time.Duration
+}
+
+fn new_duration_cmd(precision time.Duration, args ...Value) &DurationCmd {
+	return &DurationCmd{
+		args:      args
+		precision: precision
+	}
+}
+
+pub fn (cmd &DurationCmd) value() time.Duration {
+	return cmd.val
+}
+
+pub fn (cmd &DurationCmd) result() !time.Duration {
+	error := cmd.error or { return cmd.val }
+	return error
+}
+
+fn (mut cmd DurationCmd) read_reply(mut rd ProtoReader) ! {
+	n := rd.read_int()!
+	match n {
+		// -2 if the key does not exist
+		// -1 if the key exists, no expire
+		-2, -1 {
+			cmd.val = time.Duration(n)
+		}
+		else {
+			cmd.val = time.Duration(n) * cmd.precision
+		}
 	}
 }

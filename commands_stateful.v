@@ -53,9 +53,12 @@ pub fn (c StatefulCmdableFn) client_set_info(libinfo LibInfo) &StatusCmd {
 	if name := libinfo.name {
 		libname := 'einar-hjortdal/redict(${name},${replace_spaces(version.full_v_version(false))})'
 		cmd = new_status_cmd('client', 'setinfo', 'LIB-NAME', libname)
-	} else {
-		cmd = new_status_cmd('client', 'setinfo', 'LIB-VER', libinfo.version)
 	}
+
+	if version := libinfo.version {
+		cmd = new_status_cmd('client', 'setinfo', 'LIB-VER', version)
+	}
+
 	c(mut cmd) or {}
 	return cmd
 }
