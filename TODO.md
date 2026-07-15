@@ -24,12 +24,10 @@
 ## Client
 
 - Implement cluster client
+- Implement sentinel client
 - Implement pipeline
 - Implement pub/sub
 - Implement retry_backoff
-- Implement hooks: provide a way to modify or customize the behavior of specific stages in the command 
-  execution process. Allow users to inject additional logic before or after a command is executed (such 
-  as logging).
 
 ## Cmdable
 
@@ -42,3 +40,12 @@
 - `big number` can be parsed to `big.Integer`
 
 ## Writer
+
+## Low priority
+
+- Rewrite to avoid option initialization mutations
+- Use optional function fields in options
+- TLS
+- Hooks: provide a way to modify or customize the behavior of specific stages in the command 
+  execution process. Allow users to inject additional logic before or after a command is executed (such 
+  as logging).
