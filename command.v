@@ -343,6 +343,35 @@ fn (mut cmd IntSliceCmd) read_reply(mut rd ProtoReader) ! {
 	}
 }
 
+pub struct BoolSliceCmd {
+	BaseCmd
+mut:
+	val []bool
+}
+
+fn new_bool_slice_cmd(args ...Value) &BoolSliceCmd {
+	return &BoolSliceCmd{
+		args: args
+	}
+}
+
+pub fn (cmd &BoolSliceCmd) value() []bool {
+	return cmd.val
+}
+
+pub fn (cmd &BoolSliceCmd) result() ![]bool {
+	error := cmd.error or { return cmd.val }
+	return error
+}
+
+fn (mut cmd BoolSliceCmd) read_reply(mut rd ProtoReader) ! {
+	n := rd.read_array_len()!
+	cmd.val = []bool{len: 0, cap: n}
+	for i := 0; i < n; i++ {
+		cmd.val << rd.read_bool()!
+	}
+}
+
 pub struct DurationCmd {
 	BaseCmd
 mut:
