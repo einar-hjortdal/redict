@@ -1,6 +1,7 @@
 module redict
 
 interface Cmdable {
+	BitMapCmdable
 	GenericCmdable
 	HashCmdable
 	SetCmdable
