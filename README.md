@@ -32,6 +32,7 @@ println(result.val())
 
 - Connection pool
 - Supported commands:
+  - [connection](./commands.v)
   - [generic](./commands_generic.v)
   - [hash](./commands_hash.v)
   - [set](./commands_set.v)
