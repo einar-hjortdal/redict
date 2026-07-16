@@ -560,3 +560,54 @@ fn (mut cmd CommandsInfoCmd) read_reply(mut rd ProtoReader) ! {
 		}
 	}
 }
+
+pub struct KeyFlags {
+pub:
+	key   string
+	flags []string
+}
+
+struct KeyFlagsCmd {
+	BaseCmd
+mut:
+	val []KeyFlags
+}
+
+fn new_key_flags_cmd(args ...Value) &KeyFlagsCmd {
+	return &KeyFlagsCmd{
+		args: args
+	}
+}
+
+pub fn (cmd &KeyFlagsCmd) value() []KeyFlags {
+	return cmd.val
+}
+
+pub fn (cmd &KeyFlagsCmd) result() ![]KeyFlags {
+	error := cmd.error or { return cmd.val }
+	return error
+}
+
+fn (mut cmd KeyFlagsCmd) read_reply(mut rd ProtoReader) ! {
+	n := rd.read_array_len()!
+	cmd.val = []KeyFlags{len: 0, cap: n}
+	if n == 0 {
+		return
+	}
+
+	for i := 0; i < n; i++ {
+		rd.read_fixed_array_len(2)!
+		key := rd.read_string()!
+
+		flags_len := rd.read_array_len()!
+		mut flags := []string{len: 0, cap: flags_len}
+		for j := 0; j < flags_len; j++ {
+			flags << rd.read_string()!
+		}
+
+		cmd.val << KeyFlags{
+			key:   key
+			flags: flags
+		}
+	}
+}

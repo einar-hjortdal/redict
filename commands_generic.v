@@ -21,10 +21,10 @@ pub interface GenericCmdable {
 	keys(pattern string) &StringSliceCmd
 	// migrate
 	// move
-	// objectfreq
-	// objectrefcount
-	// objectencoding
-	// objectidletime
+	// object_freq
+	// object_refcount
+	// object_encoding
+	// object_idletime
 	persist(key string) &BoolCmd
 	pexpire(key string, expiration time.Duration) &BoolCmd
 	pexpireat(key string, t time.Time) &BoolCmd
@@ -44,9 +44,21 @@ pub interface GenericCmdable {
 	touch(keys ...string) &IntCmd
 	ttl(key string) &DurationCmd
 	type(key string) &StatusCmd
-	// unlink
+	unlink(keys ...string) &IntCmd
 	// wait
 	// waitaof
+}
+
+pub fn (c CmdableFn) copy(sourceKey string, destKey string, db int) &IntCmd {
+	mut cmd := new_int_cmd('copy', sourceKey, destKey, 'DB', db)
+	c(mut cmd) or {}
+	return cmd
+}
+
+pub fn (c CmdableFn) copyreplace(sourceKey string, destKey string, db int) &IntCmd {
+	mut cmd := new_int_cmd('copy', sourceKey, destKey, 'DB', db, 'REPLACE')
+	c(mut cmd) or {}
+	return cmd
 }
 
 pub fn (c CmdableFn) del(keys ...string) &IntCmd {
@@ -215,14 +227,12 @@ pub fn (c CmdableFn) type(key string) &StatusCmd {
 	return cmd
 }
 
-pub fn (c CmdableFn) copy(sourceKey string, destKey string, db int) &IntCmd {
-	mut cmd := new_int_cmd('copy', sourceKey, destKey, 'DB', db)
-	c(mut cmd) or {}
-	return cmd
-}
+pub fn (c CmdableFn) unlink(keys ...string) &IntCmd {
+	mut args := []Value{len: 0, cap: keys.len + 1, init: Value(Empty{})}
+	args << 'UNLINK'
+	args << keys
 
-pub fn (c CmdableFn) copyreplace(sourceKey string, destKey string, db int) &IntCmd {
-	mut cmd := new_int_cmd('copy', sourceKey, destKey, 'DB', db, 'REPLACE')
+	mut cmd := new_int_cmd(...args)
 	c(mut cmd) or {}
 	return cmd
 }

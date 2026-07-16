@@ -335,6 +335,13 @@ fn (mut rd ProtoReader) read_array_len() !int {
 	}
 }
 
+fn (mut rd ProtoReader) read_fixed_array_len(fixed_len int) ! {
+	n := rd.read_array_len()!
+	if n != fixed_len {
+		return new_redict_error('got ${n} elements in the array, but expected ${fixed_len}')
+	}
+}
+
 fn (mut rd ProtoReader) read_map_len() !int {
 	line := rd.read_line()!
 	match line[0].ascii_str() {
