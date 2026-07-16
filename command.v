@@ -675,11 +675,11 @@ fn parse_client_info(s string) !&ClientInfo {
 				res.name = val
 			}
 			'age' {
-				age := strconv.atoi(val) or { continue }
+				age := strconv.atoi(val)!
 				res.age = age * time.second
 			}
 			'idle' {
-				idle := strconv.atoi(val) or { continue }
+				idle := strconv.atoi(val)!
 				res.age = idle * time.second
 			}
 			'flags' {
