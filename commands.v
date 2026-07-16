@@ -29,7 +29,7 @@ interface Cmdable {
 	client_id() &IntCmd
 	client_unblock(id i64) &IntCmd
 	client_unblock_error(id i64) &IntCmd
-	// client_info() &ClientInfoCmd
+	client_info() &ClientInfoCmd
 }
 
 type CmdableFn = fn (mut cmd Cmder) !
@@ -169,8 +169,8 @@ pub fn (c CmdableFn) client_unblock_error(id i64) &IntCmd {
 	return cmd
 }
 
-// pub fn (c CmdableFn) client_info() &ClientInfoCmd {
-// 	mut cmd := new_client_info_cmd('CLIENT', 'INFO')
-// 	c(mut cmd) or {}
-// 	return cmd
-// }
+pub fn (c CmdableFn) client_info() &ClientInfoCmd {
+	mut cmd := new_client_info_cmd('CLIENT', 'INFO')
+	c(mut cmd) or {}
+	return cmd
+}

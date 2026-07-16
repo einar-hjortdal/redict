@@ -1,6 +1,7 @@
 module redict
 
 import time
+import strconv
 
 pub interface Cmder {
 	name() string
@@ -610,4 +611,240 @@ fn (mut cmd KeyFlagsCmd) read_reply(mut rd ProtoReader) ! {
 			flags: flags
 		}
 	}
+}
+
+struct ClientInfo {
+pub mut:
+	id                   i64
+	addr                 string
+	l_addr               string
+	fd                   i64
+	name                 string
+	age                  time.Duration
+	idle                 time.Duration
+	flags                u64
+	db                   int
+	sub                  int
+	p_sub                int
+	s_sub                int
+	multi                int
+	watch                int
+	query_buf            int
+	query_buf_free       int
+	argv_mem             int
+	multi_mem            int
+	buffer_size          int
+	buffer_peak          int
+	output_buffer_length int
+	output_list_length   int
+	output_memory        int
+	total_memory         int
+	events               string
+	last_cmd             string
+	user                 string
+	redir                i64
+	resp                 int
+	lib_name             string
+	lib_ver              string
+}
+
+fn parse_client_info(s string) !&ClientInfo {
+	mut res := &ClientInfo{}
+	parts := s.split(' ')
+	for _, part in parts {
+		kv := part.split('=')
+		if kv.len != 2 {
+			return new_redict_error('unexpected client info data (${s})')
+		}
+
+		key, val := kv[0], kv[1]
+		match key {
+			'id' {
+				res.id = strconv.parse_int(val, 10, 64)!
+			}
+			'addr' {
+				res.addr = val
+			}
+			'laddr' {
+				res.l_addr = val
+			}
+			'fd' {
+				res.fd = strconv.parse_int(val, 10, 64)!
+			}
+			'name' {
+				res.name = val
+			}
+			'age' {
+				age := strconv.atoi(val) or { continue }
+				res.age = age * time.second
+			}
+			'idle' {
+				idle := strconv.atoi(val) or { continue }
+				res.age = idle * time.second
+			}
+			'flags' {
+				if val == 'N' {
+					break
+				}
+
+				for i := 0; i < val.len; i++ {
+					match val[i] {
+						`S` {
+							res.flags |= client_slave
+						}
+						`O` {
+							res.flags |= client_slave | client_monitor
+						}
+						`M` {
+							res.flags |= client_master
+						}
+						`P` {
+							res.flags |= client_pub_sub
+						}
+						`x` {
+							res.flags |= client_multi
+						}
+						`b` {
+							res.flags |= client_blocked
+						}
+						`t` {
+							res.flags |= client_tracking
+						}
+						`R` {
+							res.flags |= client_tracking_broken_redir
+						}
+						`B` {
+							res.flags |= client_tracking_bcast
+						}
+						`d` {
+							res.flags |= client_dirty_cas
+						}
+						`c` {
+							res.flags |= client_close_after_command
+						}
+						`u` {
+							res.flags |= client_un_blocked
+						}
+						`A` {
+							res.flags |= client_close_asap
+						}
+						`U` {
+							res.flags |= client_unix_socket
+						}
+						`r` {
+							res.flags |= client_read_only
+						}
+						`e` {
+							res.flags |= client_no_evict
+						}
+						`T` {
+							res.flags |= client_no_touch
+						}
+						else {
+							return new_redict_error('unexpected client info flags(${part})')
+						}
+					}
+				}
+			}
+			'db' {
+				res.db = strconv.atoi(val)!
+			}
+			'sub' {
+				res.sub = strconv.atoi(val)!
+			}
+			'psub' {
+				res.p_sub = strconv.atoi(val)!
+			}
+			'ssub' {
+				res.s_sub = strconv.atoi(val)!
+			}
+			'multi' {
+				res.multi = strconv.atoi(val)!
+			}
+			'watch' {
+				res.watch = strconv.atoi(val)!
+			}
+			'qbuf' {
+				res.query_buf = strconv.atoi(val)!
+			}
+			'qbuf-free' {
+				res.query_buf_free = strconv.atoi(val)!
+			}
+			'argv-mem' {
+				res.argv_mem = strconv.atoi(val)!
+			}
+			'multi-mem' {
+				res.multi_mem = strconv.atoi(val)!
+			}
+			'rbs' {
+				res.buffer_size = strconv.atoi(val)!
+			}
+			'rbp' {
+				res.buffer_peak = strconv.atoi(val)!
+			}
+			'obl' {
+				res.output_buffer_length = strconv.atoi(val)!
+			}
+			'oll' {
+				res.output_list_length = strconv.atoi(val)!
+			}
+			'omem' {
+				res.output_memory = strconv.atoi(val)!
+			}
+			'tot-mem' {
+				res.total_memory = strconv.atoi(val)!
+			}
+			'events' {
+				res.events = val
+			}
+			'cmd' {
+				res.last_cmd = val
+			}
+			'user' {
+				res.user = val
+			}
+			'redir' {
+				res.redir = strconv.parse_int(val, 10, 64)!
+			}
+			'resp' {
+				res.resp = strconv.atoi(val)!
+			}
+			'lib-name' {
+				res.lib_name = val
+			}
+			'lib-ver' {
+				res.lib_ver = val
+			}
+			else {
+				return new_redict_error('unexpected client info key ${key}')
+			}
+		}
+	}
+	return res
+}
+
+struct ClientInfoCmd {
+	BaseCmd
+mut:
+	val ClientInfo
+}
+
+fn new_client_info_cmd(args ...Value) &ClientInfoCmd {
+	return &ClientInfoCmd{
+		args: args
+	}
+}
+
+pub fn (cmd &ClientInfoCmd) value() ClientInfo {
+	return cmd.val
+}
+
+pub fn (cmd &ClientInfoCmd) result() !ClientInfo {
+	error := cmd.error or { return cmd.val }
+	return error
+}
+
+fn (mut cmd ClientInfoCmd) read_reply(mut rd ProtoReader) ! {
+	s := rd.read_string()!
+	cmd.val = parse_client_info(s.trim_space())!
 }
