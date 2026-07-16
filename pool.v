@@ -150,7 +150,7 @@ fn (mut cp ConnectionPool) free_turn() {
 fn (mut cp ConnectionPool) pop_idle() !&PoolConnection {
 	length := cp.idle_connections.len
 	if length == 0 {
-		return error(format_error_message('No available idle connections'))
+		return new_redict_error('No available idle connections')
 	}
 	index := length - 1
 	mut popped_conn := cp.idle_connections[index]

@@ -35,7 +35,7 @@ pub fn (c CmdableFn) bitcount(key string, bit_count ?BitCount) &IntCmd {
 		if unit := bc.unit {
 			if unit != bit_count_index_byte && unit != bit_count_index_bit {
 				mut cmd := new_int_cmd()
-				cmd.error = error(format_error_message('invalid bitcount index'))
+				cmd.error = new_redict_error('invalid bitcount index')
 				return cmd
 			}
 			args << unit
@@ -61,7 +61,7 @@ pub fn (c CmdableFn) bitfield(key string, values ...Value) &IntSliceCmd {
 pub fn (c CmdableFn) bitfield_ro(key string, values ...Value) &IntSliceCmd {
 	if values.len % 2 != 0 {
 		mut cmd := new_int_slice_cmd()
-		cmd.error = error(format_error_message('bitfield_ro received uneven number of values'))
+		cmd.error = new_redict_error('bitfield_ro received uneven number of values')
 		return cmd
 	}
 
@@ -106,7 +106,7 @@ pub fn (c CmdableFn) bitopnot(dest_key string, keys ...string) &IntCmd {
 pub fn (c CmdableFn) bitpos(key string, bit i64, pos ...i64) &IntCmd {
 	if pos.len > 2 {
 		mut cmd := new_int_cmd()
-		cmd.error = error(format_error_message('bitpos received too many pos'))
+		cmd.error = new_redict_error('bitpos received too many pos')
 		return cmd
 	}
 

@@ -504,7 +504,9 @@ fn (mut cmd CommandsInfoCmd) read_reply(mut rd ProtoReader) ! {
 		nn := rd.read_array_len()!
 		match nn {
 			num_arg_redict5, num_arg_redict6, num_arg_redict7 {}
-			else { return error(format_error_message('got ${n} elements in COMMAND reply, expected 6/7/10"')) }
+			else {
+				return new_redict_error('got ${n} elements in COMMAND reply, expected 6/7/10"')
+			}
 		}
 
 		name := rd.read_string()!
