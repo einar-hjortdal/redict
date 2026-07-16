@@ -4,6 +4,7 @@ pub const bit_count_index_byte = 'BYTE'
 pub const bit_count_index_bit = 'BIT'
 
 pub struct BitCount {
+pub:
 	start i64
 	end   i64
 	unit  ?string
