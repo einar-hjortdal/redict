@@ -459,3 +459,104 @@ fn (mut cmd MapStringStringCmd) read_reply(mut rd ProtoReader) ! {
 		cmd.val[key] = value
 	}
 }
+
+pub struct CommandInfo {
+	name          string
+	arity         i8
+	flags         []string
+	acl_flags     []string
+	first_key_pos i8
+	last_key_pos  i8
+	step_count    i8
+	read_only     bool
+}
+
+struct CommandsInfoCmd {
+	BaseCmd
+mut:
+	val map[string]CommandInfo
+}
+
+fn new_commands_info_cmd(args ...Value) &CommandsInfoCmd {
+	return &CommandsInfoCmd{
+		args: args
+	}
+}
+
+pub fn (cmd &CommandsInfoCmd) value() map[string]CommandInfo {
+	return cmd.val
+}
+
+pub fn (cmd &CommandsInfoCmd) result() !map[string]CommandInfo {
+	error := cmd.error or { return cmd.val }
+	return error
+}
+
+fn (mut cmd CommandsInfoCmd) read_reply(mut rd ProtoReader) ! {
+	num_arg_redict5 := 6
+	num_arg_redict6 := 7
+	num_arg_redict7 := 10
+
+	n := rd.read_array_len()!
+
+	for i := 0; i < n; i++ {
+		nn := rd.read_array_len()!
+		match nn {
+			num_arg_redict5, num_arg_redict6, num_arg_redict7 {}
+			else { return error(format_error_message('got ${n} elements in COMMAND reply, expected 6/7/10"')) }
+		}
+
+		name := rd.read_string()!
+		arity := rd.read_int()!
+
+		flag_len := rd.read_array_len()!
+		mut read_only := false
+		mut flags := []string{len: flag_len}
+		for f := 0; f < flag_len; f++ {
+			s := rd.read_string() or {
+				if is_nil(err) { '' }
+				return err
+			}
+
+			if s == 'readonly' {
+				read_only = true
+			}
+
+			flags[f] = s
+		}
+
+		first_key_pos := rd.read_int()!
+		last_key_pos := rd.read_int()!
+		step_count := rd.read_int()!
+
+		mut acl_flags := []string{}
+		if nn >= num_arg_redict6 {
+			acl_flags_len := rd.read_array_len()!
+			acl_flags = []string{len: acl_flags_len}
+			for f := 0; f < acl_flags_len; f++ {
+				s := rd.read_string() or {
+					if is_nil(err) { '' }
+					return err
+				}
+				acl_flags[f] = s
+			}
+		}
+
+		if nn >= num_arg_redict7 {
+			rd.discard_next()!
+			rd.discard_next()!
+			rd.discard_next()!
+		}
+
+		cmd.val[name] = CommandInfo{
+			name:          name
+			arity:         i8(arity)
+			flags:         flags
+			acl_flags:     acl_flags
+			first_key_pos: i8(first_key_pos)
+			last_key_pos:  i8(last_key_pos)
+			step_count:    i8(step_count)
+			read_only:     read_only
+		}
+	}
+}
