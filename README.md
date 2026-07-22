@@ -35,6 +35,7 @@ println(result.val())
   - [connection](./commands.v)
   - [generic](./commands_generic.v)
   - [hash](./commands_hash.v)
+  - [list](./commands_list.v)
   - [set](./commands_set.v)
   - [string](./commands_string.v)
 

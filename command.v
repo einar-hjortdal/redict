@@ -850,3 +850,35 @@ fn (mut cmd ClientInfoCmd) read_reply(mut rd ProtoReader) ! {
 	s := rd.read_string()!
 	cmd.val = parse_client_info(s.trim_space())!
 }
+
+struct KeyValuesCmd {
+	BaseCmd
+mut:
+	key string
+	val []string
+}
+
+fn new_key_values_cmd(args ...Value) &KeyValuesCmd {
+	return &KeyValuesCmd{
+		args: args
+	}
+}
+
+pub fn (cmd &KeyValuesCmd) value() (string, []string) {
+	return cmd.key, cmd.val
+}
+
+pub fn (cmd &KeyValuesCmd) result() !(string, []string) {
+	error := cmd.error or { return cmd.key, cmd.val }
+	return error
+}
+
+fn (mut cmd KeyValuesCmd) read_reply(mut rd ProtoReader) ! {
+	rd.read_fixed_array_len(2)!
+	cmd.key = rd.read_string()!
+	n := rd.read_array_len()!
+	cmd.val = []string{len: 0, cap: n}
+	for i := 0; i < n; i++ {
+		cmd.val << rd.read_string()!
+	}
+}

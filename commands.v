@@ -6,6 +6,7 @@ interface Cmdable {
 	BitMapCmdable
 	GenericCmdable
 	HashCmdable
+	ListCmdable
 	SetCmdable
 	StringCmdable
 	command() &CommandsInfoCmd
@@ -15,21 +16,42 @@ interface Cmdable {
 	command_list_filterby_pattern(pattern string) &StringSliceCmd
 	command_getkeys(commands ...Value) &StringSliceCmd
 	command_getkeysandflags(commands ...Value) &KeyFlagsCmd
-	client_getname() &StringCmd
 	echo(message Value) &StringCmd
 	ping() &StatusCmd
 	// quit() &StatusCmd
 	bgrewriteaof() &StatusCmd
 	bgsave() &StatusCmd
-	client_kill(ip_port string) &StatusCmd
+	client_getname() &StringCmd
+	client_id() &IntCmd
+	client_info() &ClientInfoCmd
 	client_kill_filer(keys ...string) &IntCmd
+	client_kill(ip_port string) &StatusCmd
 	client_list() &StringCmd
 	client_pause(d time.Duration) &BoolCmd
-	client_unpause() &BoolCmd
-	client_id() &IntCmd
-	client_unblock(id i64) &IntCmd
 	client_unblock_error(id i64) &IntCmd
-	client_info() &ClientInfoCmd
+	client_unblock(id i64) &IntCmd
+	client_unpause() &BoolCmd
+	// config_et
+	// config_reset_stat
+	// config_rewrite
+	// config_set
+	// dbsize
+	// debug_object
+	// flushall
+	// flushall_async
+	// flushdb
+	// flushdb_async
+	// info
+	// info_map
+	// lastsave
+	// memory_usage
+	// save
+	// shutdown
+	// shutdown_nosave
+	// shutdown_save
+	// slaveof
+	// slowlog_get
+	// time
 }
 
 type CmdableFn = fn (mut cmd Cmder) !
@@ -86,12 +108,6 @@ pub fn (c CmdableFn) command_getkeysandflags(commands ...Value) &KeyFlagsCmd {
 	return cmd
 }
 
-pub fn (c CmdableFn) client_getname() &StringCmd {
-	mut cmd := new_string_cmd('CLIENT', 'GETNAME')
-	c(mut cmd) or {}
-	return cmd
-}
-
 pub fn (c CmdableFn) echo(message Value) &StringCmd {
 	mut cmd := new_string_cmd('ECHO', message)
 	c(mut cmd) or {}
@@ -116,8 +132,20 @@ pub fn (c CmdableFn) bgsave() &StatusCmd {
 	return cmd
 }
 
-pub fn (c CmdableFn) client_kill(ip_port string) &StatusCmd {
-	mut cmd := new_status_cmd('CLIENT', 'KILL', ip_port)
+pub fn (c CmdableFn) client_getname() &StringCmd {
+	mut cmd := new_string_cmd('CLIENT', 'GETNAME')
+	c(mut cmd) or {}
+	return cmd
+}
+
+pub fn (c CmdableFn) client_id() &IntCmd {
+	mut cmd := new_int_cmd('CLIENT', 'ID')
+	c(mut cmd) or {}
+	return cmd
+}
+
+pub fn (c CmdableFn) client_info() &ClientInfoCmd {
+	mut cmd := new_client_info_cmd('CLIENT', 'INFO')
 	c(mut cmd) or {}
 	return cmd
 }
@@ -129,6 +157,12 @@ pub fn (c CmdableFn) client_kill_filter(keys ...string) &IntCmd {
 	args << keys
 
 	mut cmd := new_int_cmd(...args)
+	c(mut cmd) or {}
+	return cmd
+}
+
+pub fn (c CmdableFn) client_kill(ip_port string) &StatusCmd {
+	mut cmd := new_status_cmd('CLIENT', 'KILL', ip_port)
 	c(mut cmd) or {}
 	return cmd
 }
@@ -145,14 +179,8 @@ pub fn (c CmdableFn) client_pause(d time.Duration) &BoolCmd {
 	return cmd
 }
 
-pub fn (c CmdableFn) client_unpause() &BoolCmd {
-	mut cmd := new_bool_cmd('CLIENT', 'UNPAUSE')
-	c(mut cmd) or {}
-	return cmd
-}
-
-pub fn (c CmdableFn) client_id() &IntCmd {
-	mut cmd := new_int_cmd('CLIENT', 'ID')
+pub fn (c CmdableFn) client_unblock_error(id i64) &IntCmd {
+	mut cmd := new_int_cmd('CLIENT', 'UNBLOCK', id, 'ERROR')
 	c(mut cmd) or {}
 	return cmd
 }
@@ -163,14 +191,8 @@ pub fn (c CmdableFn) client_unblock(id i64) &IntCmd {
 	return cmd
 }
 
-pub fn (c CmdableFn) client_unblock_error(id i64) &IntCmd {
-	mut cmd := new_int_cmd('CLIENT', 'UNBLOCK', id, 'ERROR')
-	c(mut cmd) or {}
-	return cmd
-}
-
-pub fn (c CmdableFn) client_info() &ClientInfoCmd {
-	mut cmd := new_client_info_cmd('CLIENT', 'INFO')
+pub fn (c CmdableFn) client_unpause() &BoolCmd {
+	mut cmd := new_bool_cmd('CLIENT', 'UNPAUSE')
 	c(mut cmd) or {}
 	return cmd
 }
