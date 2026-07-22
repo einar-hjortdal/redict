@@ -8,6 +8,7 @@ interface Cmdable {
 	HashCmdable
 	ListCmdable
 	SetCmdable
+	StreamCmdable
 	StringCmdable
 	command() &CommandsInfoCmd
 	command_list() &StringSliceCmd

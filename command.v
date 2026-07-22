@@ -9,7 +9,7 @@ pub interface Cmder {
 	args() []Value
 	string_arg(int) string
 	first_key_pos() int
-	// read_timeout() time.Duration
+	read_timeout() ?time.Duration
 	error() !
 mut:
 	read_reply(mut rd ProtoReader) !
@@ -30,8 +30,9 @@ fn write_cmd(mut wr ProtoWriter, cmd Cmder) ! {
 struct BaseCmd {
 	args []Value
 mut:
-	error   ?IError
-	key_pos int
+	error        ?IError
+	key_pos      int
+	read_timeout ?time.Duration
 }
 
 pub fn (cmd &BaseCmd) name() string {
@@ -94,6 +95,14 @@ pub fn (cmd &BaseCmd) error() ! {
 	if error := cmd.error {
 		return error
 	}
+}
+
+fn (cmd BaseCmd) read_timeout() ?time.Duration {
+	return cmd.read_timeout
+}
+
+fn (mut cmd BaseCmd) set_read_timeout(d time.Duration) {
+	cmd.read_timeout = d
 }
 
 pub struct Cmd {

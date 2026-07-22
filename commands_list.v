@@ -2,7 +2,7 @@ module redict
 
 import time
 
-pub struct LPosArgs {
+pub struct LposArgs {
 pub:
 	rank   ?i64
 	maxlen ?i64
@@ -21,8 +21,8 @@ pub interface ListCmdable {
 	lmpop(direction string, count i64, keys ...string) &KeyValuesCmd
 	lpop(key string) &StringCmd
 	lpop_count(key string, count i64) &StringSliceCmd
-	lpos(key string, value string, args LPosArgs) &IntCmd
-	lpos_count(key string, value string, count i64, args LPosArgs) &IntSliceCmd
+	lpos(key string, value string, args LposArgs) &IntCmd
+	lpos_count(key string, value string, count i64, args LposArgs) &IntSliceCmd
 	lpush(key string, values ...Value) &IntCmd
 	lpushx(key string, values ...Value) &IntCmd
 	lrange(key string, start i64, stop i64) &StringSliceCmd
@@ -140,7 +140,7 @@ pub fn (c CmdableFn) lpop_count(key string, count i64) &StringSliceCmd {
 	return cmd
 }
 
-pub fn (c CmdableFn) lpos(key string, value string, lpos_args LPosArgs) &IntCmd {
+pub fn (c CmdableFn) lpos(key string, value string, lpos_args LposArgs) &IntCmd {
 	mut args := []Value{len: 0, cap: 6, init: Empty{}}
 	args << key
 	args << value
@@ -160,7 +160,7 @@ pub fn (c CmdableFn) lpos(key string, value string, lpos_args LPosArgs) &IntCmd 
 	return cmd
 }
 
-pub fn (c CmdableFn) lpos_count(key string, value string, count i64, lpos_args LPosArgs) &IntSliceCmd {
+pub fn (c CmdableFn) lpos_count(key string, value string, count i64, lpos_args LposArgs) &IntSliceCmd {
 	mut args := []Value{len: 0, cap: 8, init: Empty{}}
 	args << key
 	args << value
