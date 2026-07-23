@@ -37,6 +37,7 @@ println(result.val())
   - [hash](./commands_hash.v)
   - [list](./commands_list.v)
   - [set](./commands_set.v)
+  - [stream](./commands_stream.v)
   - [string](./commands_string.v)
 
 ## Objectives
