@@ -7,13 +7,13 @@ pub interface Cmder {
 	name() string
 	full_name() string
 	args() []Value
-	string_arg(int) string
+	string_arg(pos int) string
 	first_key_pos() int
 	read_timeout() ?time.Duration
 	error() !
 mut:
 	read_reply(mut rd ProtoReader) !
-	set_first_key_pos(int)
+	set_first_key_pos(key_pos int)
 	set_error(err IError)
 }
 
@@ -1145,6 +1145,7 @@ fn (mut cmd XinfoConsumersCmd) read_reply(mut rd ProtoReader) ! {
 }
 
 struct XinfoGroups {
+pub:
 	name              string
 	consumers         i64
 	pending           i64
@@ -1175,21 +1176,540 @@ pub fn (cmd &XinfoGroupsCmd) result() ![]XinfoGroups {
 }
 
 fn (mut cmd XinfoGroupsCmd) read_reply(mut rd ProtoReader) ! {
-	// TODO
+	n := rd.read_array_len()!
+	cmd.val = []XinfoGroups{len: 0, cap: n}
+	for i := 0; i < n; i++ {
+		nn := rd.read_map_len()!
+
+		mut name := ''
+		mut consumers := i64(0)
+		mut pending := i64(0)
+		mut last_delivered_id := ''
+		mut entries_read := i64(0)
+		mut lag := i64(0)
+
+		for f := 0; f < nn; f++ {
+			key := rd.read_string()!
+			match key {
+				'name' {
+					name = rd.read_string()!
+				}
+				'consumers' {
+					consumers = rd.read_int()!
+				}
+				'pending' {
+					pending = rd.read_int()!
+				}
+				'last-delivered-id' {
+					last_delivered_id = rd.read_string()!
+				}
+				'entries-read' {
+					entries_read = rd.read_int()!
+				}
+				'lag' {
+					lag = rd.read_int()!
+				}
+				else {
+					return new_redict_error('unexpected content ${key} in XINFO GROUPS reply')
+				}
+			}
+		}
+
+		cmd.val << XinfoGroups{
+			name:              name
+			consumers:         consumers
+			pending:           pending
+			last_delivered_id: last_delivered_id
+			entries_read:      entries_read
+			lag:               lag
+		}
+	}
+}
+
+struct XinfoStream {
+pub:
+	length                  i64
+	radix_tree_keys         i64
+	radix_tree_nodes        i64
+	groups                  i64
+	last_generated_id       string
+	max_deleted_entry_id    string
+	entries_added           i64
+	first_entry             Xmessage
+	last_entry              Xmessage
+	recorded_first_entry_id string
 }
 
 pub struct XinfoStreamCmd {
 	BaseCmd
+mut:
+	val XinfoStream
+}
+
+fn new_xinfo_stream_cmd(args ...Value) &XinfoStreamCmd {
+	return &XinfoStreamCmd{
+		args: args
+	}
+}
+
+pub fn (cmd &XinfoStreamCmd) value() XinfoStream {
+	return cmd.val
+}
+
+pub fn (cmd &XinfoStreamCmd) result() !XinfoStream {
+	error := cmd.error or { return cmd.val }
+	return error
+}
+
+fn (mut cmd XinfoStreamCmd) read_reply(mut rd ProtoReader) ! {
+	n := rd.read_map_len()!
+
+	mut length := i64(0)
+	mut radix_tree_keys := i64(0)
+	mut radix_tree_nodes := i64(0)
+	mut groups := i64(0)
+	mut last_generated_id := ''
+	mut max_deleted_entry_id := ''
+	mut entries_added := i64(0)
+	mut first_entry := Xmessage{}
+	mut last_entry := Xmessage{}
+	mut recorded_first_entry_id := ''
+
+	for i := 0; i < n; i++ {
+		key := rd.read_string()!
+		match key {
+			'length' {
+				length = rd.read_int()!
+			}
+			'radix-tree-keys' {
+				radix_tree_keys = rd.read_int()!
+			}
+			'radix-tree-nodes' {
+				radix_tree_nodes = rd.read_int()!
+			}
+			'groups' {
+				groups = rd.read_int()!
+			}
+			'last-generated-id' {
+				last_generated_id = rd.read_string()!
+			}
+			'max-deleted-entry-id' {
+				max_deleted_entry_id = rd.read_string()!
+			}
+			'entries-added' {
+				entries_added = rd.read_int()!
+			}
+			'first-entry' {
+				first_entry = read_xmessage(mut rd)!
+			}
+			'last-entry' {
+				last_entry = read_xmessage(mut rd)!
+			}
+			'recorded-first-entry-id' {
+				recorded_first_entry_id = rd.read_string()!
+			}
+			else {
+				return new_redict_error('unexpected content ${key} in XINFO STREAM reply')
+			}
+		}
+	}
+
+	cmd.val = XinfoStream{
+		length:                  length
+		radix_tree_keys:         radix_tree_keys
+		radix_tree_nodes:        radix_tree_nodes
+		groups:                  groups
+		last_generated_id:       last_generated_id
+		max_deleted_entry_id:    max_deleted_entry_id
+		entries_added:           entries_added
+		first_entry:             first_entry
+		last_entry:              last_entry
+		recorded_first_entry_id: recorded_first_entry_id
+	}
+}
+
+pub struct XinfoStreamGroupPending {
+pub:
+	id             string
+	consumer       string
+	delivery_time  time.Time
+	delivery_count i64
+}
+
+pub struct XinfoStreamConsumerPending {
+pub:
+	id             string
+	delivery_time  time.Time
+	delivery_count i64
+}
+
+pub struct XinfoStreamConsumer {
+pub:
+	name        string
+	seen_time   time.Time
+	active_time time.Time
+	pel_count   i64
+	pending     []XinfoStreamConsumerPending
+}
+
+pub struct XinfoStreamGroup {
+pub:
+	name              string
+	last_delivered_id string
+	entries_read      i64
+	lag               i64
+	pel_count         i64
+	pending           []XinfoStreamGroupPending
+	consumers         []XinfoStreamConsumer
+}
+
+pub struct XinfoStreamFull {
+pub:
+	length                  i64
+	radix_tree_keys         i64
+	radix_tree_nodes        i64
+	last_generated_id       string
+	max_deleted_entry_id    string
+	entries_added           i64
+	entries                 []Xmessage
+	groups                  []XinfoStreamGroup
+	recorded_first_entry_id string
 }
 
 pub struct XinfoStreamFullCmd {
 	BaseCmd
+mut:
+	val XinfoStreamFull
+}
+
+fn new_xinfo_stream_full_cmd(args ...Value) &XinfoStreamFullCmd {
+	return &XinfoStreamFullCmd{
+		args: args
+	}
+}
+
+pub fn (cmd &XinfoStreamFullCmd) value() XinfoStreamFull {
+	return cmd.val
+}
+
+pub fn (cmd &XinfoStreamFullCmd) result() !XinfoStreamFull {
+	error := cmd.error or { return cmd.val }
+	return error
+}
+
+fn read_xinfo_stream_group_pending(mut rd ProtoReader) ![]XinfoStreamGroupPending {
+	n := rd.read_array_len()!
+	mut pending := []XinfoStreamGroupPending{len: 0, cap: n}
+	for i := 0; i < n; i++ {
+		rd.read_fixed_array_len(4)!
+		id := rd.read_string()!
+		consumer := rd.read_string()!
+
+		delivery := rd.read_int()!
+		sec := delivery / 1000
+		nsec := int(delivery % 1000 * time.millisecond)
+		delivery_time := time.unix_nanosecond(sec, nsec)
+
+		delivery_count := rd.read_int()!
+
+		pending << XinfoStreamGroupPending{
+			id:             id
+			consumer:       consumer
+			delivery_time:  delivery_time
+			delivery_count: delivery_count
+		}
+	}
+	return pending
+}
+
+fn read_xinfo_stream_consumers_pending(mut rd ProtoReader) ![]XinfoStreamConsumerPending {
+	n := rd.read_array_len()!
+	mut pending := []XinfoStreamConsumerPending{len: 0, cap: n}
+	for i := 0; i < n; i++ {
+		rd.read_fixed_array_len(3)!
+		id := rd.read_string()!
+
+		delivery := rd.read_int()!
+		sec := delivery / 1000
+		nsec := int(delivery % 1000 * time.millisecond)
+		delivery_time := time.unix_nanosecond(sec, nsec)
+
+		delivery_count := rd.read_int()!
+
+		pending << XinfoStreamConsumerPending{
+			id:             id
+			delivery_time:  delivery_time
+			delivery_count: delivery_count
+		}
+	}
+	return pending
+}
+
+fn read_xinfo_stream_consumers(mut rd ProtoReader) ![]XinfoStreamConsumer {
+	n := rd.read_array_len()!
+	mut consumers := []XinfoStreamConsumer{len: 0, cap: n}
+	for i := 0; i < n; i++ {
+		nn := rd.read_map_len()!
+		for f := 0; f < nn; f++ {
+			mut name := ''
+			mut seen_time := time.Time{}
+			mut active_time := time.Time{}
+			mut pel_count := i64(0)
+			mut pending := []XinfoStreamConsumerPending{}
+
+			key := rd.read_string()!
+			match key {
+				'name' {
+					name = rd.read_string()!
+				}
+				'seen-time' {
+					t := rd.read_int()!
+					seen_time = time.unix_milli(t)
+				}
+				'active-time' {
+					t := rd.read_int()!
+					active_time = time.unix_milli(t)
+				}
+				'pel-count' {
+					pel_count = rd.read_int()!
+				}
+				'pending' {
+					pending = read_xinfo_stream_consumers_pending(mut rd)!
+				}
+				else {
+					return new_redict_error('unexpected key ${key} in XINFO STREAM FULL reply')
+				}
+			}
+
+			consumers << XinfoStreamConsumer{
+				name:        name
+				seen_time:   seen_time
+				active_time: active_time
+				pel_count:   pel_count
+				pending:     pending
+			}
+		}
+	}
+	return consumers
+}
+
+fn read_stream_groups(mut rd ProtoReader) ![]XinfoStreamGroup {
+	n := rd.read_array_len()!
+	mut groups := []XinfoStreamGroup{len: 0, cap: n}
+	for i := 0; i < n; i++ {
+		nn := rd.read_map_len()!
+
+		mut name := ''
+		mut last_delivered_id := ''
+		mut entries_read := i64(0)
+		mut lag := i64(0)
+		mut pel_count := i64(0)
+		mut pending := []XinfoStreamGroupPending{}
+		mut consumers := []XinfoStreamConsumer{}
+
+		for f := 0; f < nn; f++ {
+			key := rd.read_string()!
+			match key {
+				'name' {
+					name = rd.read_string()!
+				}
+				'last-delivered-id' {
+					last_delivered_id = rd.read_string()!
+				}
+				'entries-read' {
+					entries_read = rd.read_int()!
+				}
+				'lag' {
+					lag = rd.read_int()!
+				}
+				'pel-count' {
+					pel_count = rd.read_int()!
+				}
+				'pending' {
+					pending = read_xinfo_stream_group_pending(mut rd)!
+				}
+				'consumers' {
+					consumers = read_xinfo_stream_consumers(mut rd)!
+				}
+				else {
+					return new_redict_error('unexpected key ${key} in XINFO STREAM FULL reply')
+				}
+			}
+		}
+
+		groups << XinfoStreamGroup{
+			name:              name
+			last_delivered_id: last_delivered_id
+			entries_read:      entries_read
+			lag:               lag
+			pel_count:         pel_count
+			pending:           pending
+			consumers:         consumers
+		}
+	}
+
+	return groups
+}
+
+fn (mut cmd XinfoStreamFullCmd) read_reply(mut rd ProtoReader) ! {
+	n := rd.read_map_len()!
+
+	mut length := i64(0)
+	mut radix_tree_keys := i64(0)
+	mut radix_tree_nodes := i64(0)
+	mut last_generated_id := ''
+	mut max_deleted_entry_id := ''
+	mut entries_added := i64(0)
+	mut entries := []Xmessage{}
+	mut groups := []XinfoStreamGroup{}
+	mut recorded_first_entry_id := ''
+
+	for i := 0; i < n; i++ {
+		key := rd.read_string()!
+		match key {
+			'length' {
+				length = rd.read_int()!
+			}
+			'radix-tree-keys' {
+				radix_tree_keys = rd.read_int()!
+			}
+			'radix-tree-nodes' {
+				radix_tree_nodes = rd.read_int()!
+			}
+			'last-generated-id' {
+				last_generated_id = rd.read_string()!
+			}
+			'max-deleted-entry-id' {
+				max_deleted_entry_id = rd.read_string()!
+			}
+			'entries-added' {
+				entries_added = rd.read_int()!
+			}
+			'entries' {
+				entries = read_xmessage_slice(mut rd)!
+			}
+			'groups' {
+				groups = read_stream_groups(mut rd)!
+			}
+			'recorded-first-entry-id' {
+				recorded_first_entry_id = rd.read_string()!
+			}
+			else {
+				return new_redict_error('unexpected key ${key} in XINFO STREAM FULL reply')
+			}
+		}
+	}
+
+	cmd.val = XinfoStreamFull{
+		length:                  length
+		radix_tree_keys:         radix_tree_keys
+		radix_tree_nodes:        radix_tree_nodes
+		last_generated_id:       last_generated_id
+		max_deleted_entry_id:    max_deleted_entry_id
+		entries_added:           entries_added
+		entries:                 entries
+		groups:                  groups
+		recorded_first_entry_id: recorded_first_entry_id
+	}
+}
+
+struct Xpending {
+pub:
+	count     i64
+	lower     string
+	higher    string
+	consumers map[string]i64
 }
 
 pub struct XpendingCmd {
 	BaseCmd
+mut:
+	val Xpending
+}
+
+fn new_xpending_cmd(args ...Value) &XpendingCmd {
+	return &XpendingCmd{
+		args: args
+	}
+}
+
+pub fn (cmd &XpendingCmd) value() Xpending {
+	return cmd.val
+}
+
+pub fn (cmd &XpendingCmd) result() !Xpending {
+	error := cmd.error or { return cmd.val }
+	return error
+}
+
+fn (mut cmd XpendingCmd) read_reply(mut rd ProtoReader) ! {
+	rd.read_fixed_array_len(4)!
+
+	count := rd.read_int()!
+	lower := rd.read_string()!
+	higher := rd.read_string()!
+	mut consumers := map[string]i64{}
+
+	n := rd.read_array_len()!
+	for i := 0; i < n; i++ {
+		rd.read_fixed_array_len(2)!
+		consumer_name := rd.read_string()!
+		consumer_pending := rd.read_int()!
+		consumers[consumer_name] = consumer_pending
+	}
+
+	cmd.val = Xpending{
+		count:     count
+		lower:     lower
+		higher:    higher
+		consumers: consumers
+	}
+}
+
+pub struct XpendingExtended {
+pub:
+	id          string
+	consumer    string
+	idle        time.Duration
+	retry_count i64
 }
 
 pub struct XpendingExtendedCmd {
 	BaseCmd
+mut:
+	val []XpendingExtended
+}
+
+fn new_xpending_extended_cmd(args ...Value) &XpendingExtendedCmd {
+	return &XpendingExtendedCmd{
+		args: args
+	}
+}
+
+pub fn (cmd &XpendingExtendedCmd) value() []XpendingExtended {
+	return cmd.val
+}
+
+pub fn (cmd &XpendingExtendedCmd) result() ![]XpendingExtended {
+	error := cmd.error or { return cmd.val }
+	return error
+}
+
+fn (mut cmd XpendingExtendedCmd) read_reply(mut rd ProtoReader) ! {
+	n := rd.read_array_len()!
+	cmd.val = []XpendingExtended{len: 0, cap: n}
+	for i := 0; i < n; i++ {
+		rd.read_fixed_array_len(4)!
+		id := rd.read_string()!
+		consumer := rd.read_string()!
+		idle := rd.read_int()!
+		retry_count := rd.read_int()!
+
+		cmd.val << XpendingExtended{
+			id:          id
+			consumer:    consumer
+			idle:        idle
+			retry_count: retry_count
+		}
+	}
 }

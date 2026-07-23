@@ -30,6 +30,7 @@ pub:
 
 // https://redict.io/docs/commands/xpending/
 pub struct XpendingExtendedArgs {
+pub:
 	key      string
 	group    string
 	idle     ?time.Duration
@@ -52,6 +53,7 @@ pub:
 
 // https://redict.io/docs/commands/xclaim/
 pub struct XclaimArgs {
+pub:
 	key           string
 	group         string
 	consumer      string
@@ -61,7 +63,8 @@ pub struct XclaimArgs {
 
 // https://redict.io/docs/commands/xread/
 pub struct XreadArgs {
-	streams []string
+pub:
+	streams []string // streams followed by ids: ['stream1', 'stream2', 'id1', id2']
 	count   i64
 	block   ?time.Duration
 	id      ?string
@@ -92,8 +95,8 @@ interface StreamCmdable {
 	xpending_extended(a XpendingExtendedArgs) &XpendingExtendedCmd
 	xrange(key string, start string, stop string) &XmessageSliceCmd
 	xrange_count(key string, start string, stop string, count i64) &XmessageSliceCmd
-	xread(a XreadArgs) &XstreamSliceCmd
-	xreadgroup(a XreadgroupArgs) &XstreamSliceCmd
+	// xread(a XreadArgs) &XstreamSliceCmd
+	// xreadgroup(a XreadgroupArgs) &XstreamSliceCmd
 	xrevrange(key string, start string, stop string) &XmessageSliceCmd
 	xrevrange_count(key string, start string, stop string, count i64) &XmessageSliceCmd
 	xtrim_maxlen(key string, maxlen i64) &IntCmd
@@ -296,7 +299,7 @@ pub fn (c CmdableFn) xinfo_groups(key string) &XinfoGroupsCmd {
 }
 
 pub fn (c CmdableFn) xinfo_stream(key string) &XinfoStreamCmd {
-	mut cmd := new_xinfo_stream_cmd(key)
+	mut cmd := new_xinfo_stream_cmd('XINFO', 'STREAM', key)
 	c(mut cmd) or {}
 	return cmd
 }
@@ -398,7 +401,7 @@ pub fn (c CmdableFn) xread(a XreadArgs) &XstreamSliceCmd {
 	if block := a.block {
 		cmd.set_read_timeout(block)
 	}
-	cmd.set_first_key_position(key_position)
+	cmd.set_first_key_pos(key_position)
 
 	c(mut cmd) or {}
 	return cmd
@@ -432,11 +435,11 @@ pub fn (c CmdableFn) xreadgroup(a XreadgroupArgs) &XstreamSliceCmd {
 	args << 'STREAMS'
 	args << a.streams
 
-	cmd := new_xstream_slice_cmd(...args)
+	mut cmd := new_xstream_slice_cmd(...args)
 	if block := a.block {
 		cmd.set_read_timeout(block)
 	}
-	cmd.set_first_key_position(key_position)
+	cmd.set_first_key_pos(key_position)
 
 	c(mut cmd) or {}
 	return cmd
