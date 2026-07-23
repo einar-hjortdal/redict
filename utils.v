@@ -1,7 +1,9 @@
 module redict
 
-import time
+// import context
+import rand
 import strings
+import time
 
 const keep_ttl = -1
 
@@ -95,4 +97,50 @@ fn replace_spaces(s string) string {
 		}
 	}
 	return res.str()
+}
+
+// exponential with jitter
+fn retry_backoff(retry i32, min_backoff time.Duration, max_backoff time.Duration) time.Duration {
+	if retry < 0 {
+		panic('negative retry')
+	}
+
+	if min_backoff == 0 {
+		return min_backoff
+	}
+
+	mut backoff := min_backoff << u32(retry)
+	if backoff < min_backoff {
+		return max_backoff
+	}
+
+	jitter := rand.i64n(i64(backoff)) or { panic(err) } // panics when negative
+	backoff = min_backoff + time.Duration(jitter)
+
+	if backoff > max_backoff || backoff < min_backoff {
+		backoff = max_backoff
+	}
+
+	return backoff
+}
+
+// TODO https://github.com/vlang/v/issues/27914
+// fn sleep(mut ctx context.Context, d time.Duration) ! {
+// 	timer := time.new_timer(d)
+// 	defer { timer.stop() }
+// 	done := ctx.done() // https://github.com/vlang/v/issues/15268
+
+// 	select {
+// 		_ := <-timer.c {
+// 			return
+// 		}
+// 		_ := <-done {
+// 			return ctx.err()
+// 		}
+// 	}
+// }
+
+fn v_or[T](o ?T, default T) T {
+	v := o or { return default }
+	return v
 }

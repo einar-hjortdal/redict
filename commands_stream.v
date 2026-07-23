@@ -24,7 +24,7 @@ pub:
 	group         string
 	min_idle_time time.Duration
 	start         string
-	count         i64
+	count         ?i64
 	consumer      string
 }
 
@@ -168,28 +168,69 @@ pub fn (c CmdableFn) xadd(a XaddArgs) &StringCmd {
 }
 
 pub fn (c CmdableFn) xautoclaim(a XautoclaimArgs) &XautoclaimCmd {
-	args := new_xautoclaim_args(a, false)
+	mut args := []Value{len: 0, cap: 8, init: Empty{}}
+	args << 'XAUTOCLAIM'
+	args << a.key
+	args << a.group
+	args << a.consumer
+	args << format_ms(a.min_idle_time)
+	args << a.start
+
+	if count := a.count {
+		args << 'COUNT'
+		args << count
+	}
+
 	mut cmd := new_xautoclaim_cmd(...args)
 	c(mut cmd) or {}
 	return cmd
 }
 
 pub fn (c CmdableFn) xautoclaim_justid(a XautoclaimArgs) &XautoclaimJustidCmd {
-	args := new_xautoclaim_args(a, true)
+	mut args := []Value{len: 0, cap: 9, init: Empty{}}
+	args << 'XAUTOCLAIM'
+	args << a.key
+	args << a.group
+	args << a.consumer
+	args << format_ms(a.min_idle_time)
+	args << a.start
+
+	if count := a.count {
+		args << 'COUNT'
+		args << count
+	}
+
+	args << 'JUSTID'
+
 	mut cmd := new_xautoclaim_justid_cmd(...args)
 	c(mut cmd) or {}
 	return cmd
 }
 
 pub fn (c CmdableFn) xclaim(a XclaimArgs) &XmessageSliceCmd {
-	args := new_xclaim_args(a, false)
+	mut args := []Value{len: 0, cap: a.messages.len + 5, init: Empty{}}
+	args << 'XCLAIM'
+	args << a.key
+	args << a.group
+	args << a.consumer
+	args << format_ms(a.min_idle_time)
+	args << a.messages
+
 	mut cmd := new_xmessage_slice_cmd(...args)
 	c(mut cmd) or {}
 	return cmd
 }
 
 pub fn (c CmdableFn) xclaim_justid(a XclaimArgs) &StringSliceCmd {
-	args := new_xclaim_args(a, true)
+	mut args := []Value{len: 0, cap: a.messages.len + 6, init: Empty{}}
+	args << 'XCLAIM'
+	args << a.key
+	args << a.group
+	args << a.consumer
+	args << format_ms(a.min_idle_time)
+	args << a.messages
+	args << 'JUSTID'
+
 	mut cmd := new_string_slice_cmd(...args)
 	c(mut cmd) or {}
 	return cmd
@@ -243,13 +284,13 @@ pub fn (c CmdableFn) xgroup_setid(key string, group string, start string) &Statu
 }
 
 pub fn (c CmdableFn) xinfo_consumers(key string, group string) &XinfoConsumersCmd {
-	mut cmd := new_xinfo_consumers_cmd(key, group)
+	mut cmd := new_xinfo_consumers_cmd('XINFO', 'XONSUMERS', key, group)
 	c(mut cmd) or {}
 	return cmd
 }
 
 pub fn (c CmdableFn) xinfo_groups(key string) &XinfoGroupsCmd {
-	mut cmd := new_xinfo_groups_cmd(key)
+	mut cmd := new_xinfo_groups_cmd('XINFO', 'GROUPS', key)
 	c(mut cmd) or {}
 	return cmd
 }
@@ -326,7 +367,7 @@ pub fn (c CmdableFn) xrange_count(key string, start string, stop string, count i
 }
 
 pub fn (c CmdableFn) xread(a XreadArgs) &XstreamSliceCmd {
-	mut args := []Value{len: 0, cap: a.streams * 2 + 6, init: Empty{}}
+	mut args := []Value{len: 0, cap: a.streams.len * 2 + 6, init: Empty{}}
 	args << 'XREAD'
 
 	mut key_position := u8(1)
@@ -338,7 +379,7 @@ pub fn (c CmdableFn) xread(a XreadArgs) &XstreamSliceCmd {
 
 	if block := a.block {
 		args << 'BLOCK'
-		args << i64(block / time.millisecond)
+		args << format_ms(block)
 		key_position += 2
 	}
 
@@ -364,7 +405,7 @@ pub fn (c CmdableFn) xread(a XreadArgs) &XstreamSliceCmd {
 }
 
 pub fn (c CmdableFn) xreadgroup(a XreadgroupArgs) &XstreamSliceCmd {
-	mut args := []Value{len: 0, cap: a.streams + 10, init: Empty{}}
+	mut args := []Value{len: 0, cap: a.streams.len + 10, init: Empty{}}
 	args << 'XREADGROPUPS'
 	args << 'GROUP'
 	args << a.group
@@ -379,7 +420,7 @@ pub fn (c CmdableFn) xreadgroup(a XreadgroupArgs) &XstreamSliceCmd {
 
 	if block := a.block {
 		args << 'BLOCK'
-		args << i64(block / time.millisecond)
+		args << format_ms(block)
 		key_position += 2
 	}
 

@@ -3,10 +3,15 @@ module redict
 import net
 import net.urllib
 import runtime
+import time
 
 pub const protocol_flag_string = 'redict://'
 pub const default_host_string = 'localhost'
 pub const default_port_string = '6379'
+pub const default_min_retry_backoff = 8 * time.millisecond
+pub const default_max_retry_backoff = 512 * time.millisecond
+pub const default_read_timeout = 3 * time.second
+pub const default_write_timeout = 3 * time.second
 
 pub struct Options {
 pub:
@@ -23,6 +28,20 @@ pub:
 	// max_retries is the maximum number of retries before giving up.
 	// Defaults to 3, 0 is set to 3. -1 disables retries.
 	max_retries int
+	// min_retry_backoff is the minimum backoff between each retry.
+	// Defaults to 8 milliseconds
+	min_retry_backoff ?time.Duration
+	// max_retry_backoff is the maximum backoff between each retry.
+	// Default to 512 milliseconds
+	max_retry_backoff ?time.Duration
+	// read_timeout is the timeout for reads. If reached, commands will fail with a timeout instead of blocking.
+	// Defaults to 3 seconds.
+	// `0` means no timeout (block indefinitely).
+	read_timeout ?time.Duration
+	// write_timeout is the timeout writes. If reached, commands will fail with a timeout instead of blocking.
+	// Defaults to 3 seconds.
+	// `0` means no timeout (block indefinitely).
+	write_timeout ?time.Duration
 }
 
 struct ParsedOptions {
@@ -36,6 +55,10 @@ struct ParsedOptions {
 	min_idle_connections int
 	max_idle_connections int
 	max_retries          int
+	min_retry_backoff    time.Duration
+	max_retry_backoff    time.Duration
+	read_timeout         time.Duration
+	write_timeout        time.Duration
 }
 
 fn parse_url(s string) !urllib.URL {
@@ -99,6 +122,10 @@ fn (opts Options) init() !ParsedOptions {
 		min_idle_connections: opts.min_idle_connections
 		max_idle_connections: opts.max_idle_connections
 		max_retries:          max_retries
+		min_retry_backoff:    v_or(opts.min_retry_backoff, default_min_retry_backoff)
+		max_retry_backoff:    v_or(opts.max_retry_backoff, default_max_retry_backoff)
+		read_timeout:         v_or(opts.read_timeout, default_read_timeout)
+		write_timeout:        v_or(opts.write_timeout, default_write_timeout)
 	}
 }
 

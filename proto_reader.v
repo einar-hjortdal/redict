@@ -361,3 +361,8 @@ fn (mut rd ProtoReader) read_map_len() !int {
 		}
 	}
 }
+
+// TODO https://github.com/vlang/v/issues/27915
+// fn (mut rd ProtoReader) peek_reply_type() !u8 {
+// 	b := rd.reader.peek(1)
+// }

@@ -471,6 +471,7 @@ fn (mut cmd MapStringStringCmd) read_reply(mut rd ProtoReader) ! {
 }
 
 pub struct CommandInfo {
+pub:
 	name          string
 	arity         i8
 	flags         []string
@@ -481,7 +482,7 @@ pub struct CommandInfo {
 	read_only     bool
 }
 
-struct CommandsInfoCmd {
+pub struct CommandsInfoCmd {
 	BaseCmd
 mut:
 	val map[string]CommandInfo
@@ -579,7 +580,7 @@ pub:
 	flags []string
 }
 
-struct KeyFlagsCmd {
+pub struct KeyFlagsCmd {
 	BaseCmd
 mut:
 	val []KeyFlags
@@ -624,7 +625,7 @@ fn (mut cmd KeyFlagsCmd) read_reply(mut rd ProtoReader) ! {
 	}
 }
 
-struct ClientInfo {
+pub struct ClientInfo {
 pub mut:
 	id                   i64
 	addr                 string
@@ -834,7 +835,7 @@ fn parse_client_info(s string) !&ClientInfo {
 	return res
 }
 
-struct ClientInfoCmd {
+pub struct ClientInfoCmd {
 	BaseCmd
 mut:
 	val ClientInfo
@@ -860,7 +861,7 @@ fn (mut cmd ClientInfoCmd) read_reply(mut rd ProtoReader) ! {
 	cmd.val = parse_client_info(s.trim_space())!
 }
 
-struct KeyValuesCmd {
+pub struct KeyValuesCmd {
 	BaseCmd
 mut:
 	key string
@@ -890,4 +891,305 @@ fn (mut cmd KeyValuesCmd) read_reply(mut rd ProtoReader) ! {
 	for i := 0; i < n; i++ {
 		cmd.val << rd.read_string()!
 	}
+}
+
+pub struct Xmessage {
+	id     string
+	values map[string]Value
+}
+
+pub struct XmessageSliceCmd {
+	BaseCmd
+mut:
+	val []Xmessage
+}
+
+fn new_xmessage_slice_cmd(args ...Value) &XmessageSliceCmd {
+	return &XmessageSliceCmd{
+		args: args
+	}
+}
+
+pub fn (cmd &XmessageSliceCmd) value() []Xmessage {
+	return cmd.val
+}
+
+pub fn (cmd &XmessageSliceCmd) result() ![]Xmessage {
+	error := cmd.error or { return cmd.val }
+	return error
+}
+
+fn string_value_map_parser(mut rd ProtoReader) !map[string]Value {
+	n := rd.read_map_len()!
+	mut res := map[string]Value{}
+	for i := 0; i < n; i++ {
+		key := rd.read_string()!
+		value := rd.read_string()!
+		res[key] = value
+	}
+	return res
+}
+
+fn read_xmessage(mut rd ProtoReader) !Xmessage {
+	rd.read_fixed_array_len(2)!
+	id := rd.read_string()!
+	v := string_value_map_parser(mut rd) or {
+		if is_nil(err) {
+			return Xmessage{
+				id: id
+			}
+		}
+		return err
+	}
+
+	return Xmessage{
+		id:     id
+		values: v
+	}
+}
+
+fn read_xmessage_slice(mut rd ProtoReader) ![]Xmessage {
+	n := rd.read_array_len()!
+	mut res := []Xmessage{len: 0, cap: n}
+	for i := 0; i < n; i++ {
+		res << read_xmessage(mut rd)!
+	}
+	return res
+}
+
+fn (mut cmd XmessageSliceCmd) read_reply(mut rd ProtoReader) ! {
+	cmd.val = read_xmessage_slice(mut rd)!
+}
+
+pub struct Xstream {
+pub:
+	stream   string
+	messages []Xmessage
+}
+
+pub struct XstreamSliceCmd {
+	BaseCmd
+mut:
+	val []Xstream
+}
+
+fn new_xstream_slice_cmd(args ...Value) &XstreamSliceCmd {
+	return &XstreamSliceCmd{
+		args: args
+	}
+}
+
+pub fn (cmd &XstreamSliceCmd) value() []Xstream {
+	return cmd.val
+}
+
+pub fn (cmd &XstreamSliceCmd) result() ![]Xstream {
+	error := cmd.error or { return cmd.val }
+	return error
+}
+
+fn (mut cmd XstreamSliceCmd) read_reply(mut _ ProtoReader) ! {
+	// t := rd.peek_reply_type()!
+	return new_redict_error('Not implemented: need to be able to tell maps and arrays apart for this command.')
+}
+
+pub struct XautoclaimCmd {
+	BaseCmd
+mut:
+	start string
+	val   []Xmessage
+}
+
+fn new_xautoclaim_cmd(args ...Value) &XautoclaimCmd {
+	return &XautoclaimCmd{
+		args: args
+	}
+}
+
+pub fn (cmd &XautoclaimCmd) value() []Xmessage {
+	return cmd.val
+}
+
+pub fn (cmd &XautoclaimCmd) result() ![]Xmessage {
+	error := cmd.error or { return cmd.val }
+	return error
+}
+
+fn (mut cmd XautoclaimCmd) read_reply(mut rd ProtoReader) ! {
+	n := rd.read_array_len()!
+	match n {
+		2, 3 {}
+		else {
+			return new_redict_error('got ${n} elements in XAUTOCLAIM reply, expected 2 or 3')
+		}
+	}
+
+	cmd.start = rd.read_string()!
+	cmd.val = read_xmessage_slice(mut rd)!
+
+	if n > 2 {
+		rd.discard_next()!
+	}
+}
+
+pub struct XautoclaimJustidCmd {
+	BaseCmd
+mut:
+	start string
+	val   []string
+}
+
+fn new_xautoclaim_justid_cmd(args ...Value) &XautoclaimJustidCmd {
+	return &XautoclaimJustidCmd{
+		args: args
+	}
+}
+
+pub fn (cmd &XautoclaimJustidCmd) value() ([]string, string) {
+	return cmd.val, cmd.start
+}
+
+pub fn (cmd &XautoclaimJustidCmd) result() !([]string, string) {
+	error := cmd.error or { return cmd.val, cmd.start }
+	return error
+}
+
+fn (mut cmd XautoclaimJustidCmd) read_reply(mut rd ProtoReader) ! {
+	n := rd.read_array_len()!
+	match n {
+		2, 3 {}
+		else {
+			return new_redict_error('got ${n} elements in XAUTOCLAIM reply, expected 2 or 3')
+		}
+	}
+
+	cmd.start = rd.read_string()!
+	nn := rd.read_array_len()!
+	cmd.val = []string{len: 0, cap: nn}
+	for i := 0; i < nn; i++ {
+		cmd.val << rd.read_string()!
+	}
+
+	if n > 2 {
+		rd.discard_next()!
+	}
+}
+
+pub struct XinfoConsumer {
+pub:
+	name     string
+	pending  i64
+	idle     time.Duration
+	inactive time.Duration
+}
+
+pub struct XinfoConsumersCmd {
+	BaseCmd
+mut:
+	val []XinfoConsumer
+}
+
+fn new_xinfo_consumers_cmd(args ...Value) &XinfoConsumersCmd {
+	return &XinfoConsumersCmd{
+		args: args
+	}
+}
+
+pub fn (cmd &XinfoConsumersCmd) value() []XinfoConsumer {
+	return cmd.val
+}
+
+pub fn (cmd &XinfoConsumersCmd) result() ![]XinfoConsumer {
+	error := cmd.error or { return cmd.val }
+	return error
+}
+
+fn (mut cmd XinfoConsumersCmd) read_reply(mut rd ProtoReader) ! {
+	n := rd.read_array_len()!
+	cmd.val = []XinfoConsumer{len: 0, cap: n}
+	for i := 0; i < n; i++ {
+		nn := rd.read_map_len()!
+
+		mut name := ''
+		mut pending := i64(0)
+		mut idle := time.Duration(0)
+		mut inactive := time.Duration(0)
+		for f := 0; f < nn; f++ {
+			key := rd.read_string()!
+			match key {
+				'name' {
+					name = rd.read_string()!
+				}
+				'pending' {
+					pending = rd.read_int()!
+				}
+				'idle' {
+					idle = rd.read_int()!
+				}
+				'inactive' {
+					inactive = rd.read_int()!
+				}
+				else {
+					return new_redict_error('unexpected content ${key} in XINFO CONSUMERS reply')
+				}
+			}
+		}
+
+		cmd.val << XinfoConsumer{
+			name:     name
+			pending:  pending
+			idle:     idle
+			inactive: inactive
+		}
+	}
+}
+
+struct XinfoGroups {
+	name              string
+	consumers         i64
+	pending           i64
+	last_delivered_id string
+	entries_read      i64
+	lag               i64
+}
+
+pub struct XinfoGroupsCmd {
+	BaseCmd
+mut:
+	val []XinfoGroups
+}
+
+fn new_xinfo_groups_cmd(args ...Value) &XinfoGroupsCmd {
+	return &XinfoGroupsCmd{
+		args: args
+	}
+}
+
+pub fn (cmd &XinfoGroupsCmd) value() []XinfoGroups {
+	return cmd.val
+}
+
+pub fn (cmd &XinfoGroupsCmd) result() ![]XinfoGroups {
+	error := cmd.error or { return cmd.val }
+	return error
+}
+
+fn (mut cmd XinfoGroupsCmd) read_reply(mut rd ProtoReader) ! {
+	// TODO
+}
+
+pub struct XinfoStreamCmd {
+	BaseCmd
+}
+
+pub struct XinfoStreamFullCmd {
+	BaseCmd
+}
+
+pub struct XpendingCmd {
+	BaseCmd
+}
+
+pub struct XpendingExtendedCmd {
+	BaseCmd
 }

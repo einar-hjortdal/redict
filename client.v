@@ -1,6 +1,7 @@
 module redict
 
 import net
+import time
 
 struct BaseClient {
 	options ParsedOptions
@@ -71,13 +72,27 @@ fn (mut c BaseClient) dial(address string) !&net.TcpConn {
 	return c.options.dialer(address)
 }
 
+fn (mut c BaseClient) retry_backoff(attempt int) time.Duration {
+	return retry_backoff(attempt, c.options.min_retry_backoff, c.options.max_retry_backoff)
+}
+
+fn (mut c BaseClient) cmd_timeout(cmd &Cmder) time.Duration {
+	if timeout := cmd.read_timeout() {
+		if timeout == 0 {
+			return 0
+		}
+		return timeout + 10 * time.second
+	}
+	return c.options.read_timeout
+}
+
 fn (mut c BaseClient) attempt_process(mut cmd Cmder) ! {
-	mut cmd_ref := unsafe { &cmd } // TODO can unsafe be removed?
-	c.with_connection(fn [mut cmd_ref] (mut pc PoolConnection) ! {
-		pc.with_writer(fn [cmd_ref] (mut wr ProtoWriter) ! {
+	mut cmd_ref := unsafe { &cmd } // TODO can unsafe be removed? https://github.com/vlang/v/issues/26986
+	c.with_connection(fn [mut c, mut cmd_ref] (mut pc PoolConnection) ! {
+		pc.with_writer(fn [cmd_ref] (mut wr ProtoWriter) ! { // include c.options.write_timeout
 			write_cmd(mut wr, cmd_ref)!
 		})!
-		pc.with_reader(cmd_ref.read_reply)!
+		pc.with_reader(c.cmd_timeout(cmd_ref), cmd_ref.read_reply)! // TODO needs atomic or something
 	})!
 }
 
@@ -85,7 +100,7 @@ fn (mut c BaseClient) process(mut cmd Cmder) ! {
 	mut last_error := ?IError(none)
 	for attempt := 0; attempt <= c.options.max_retries; attempt++ {
 		if attempt > 0 {
-			// TODO sleep before retry
+			time.sleep(c.retry_backoff(attempt))
 		}
 
 		c.attempt_process(mut cmd) or {
