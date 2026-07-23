@@ -87,12 +87,11 @@ fn (mut c BaseClient) cmd_timeout(cmd &Cmder) time.Duration {
 }
 
 fn (mut c BaseClient) attempt_process(mut cmd Cmder) ! {
-	mut cmd_ref := unsafe { &cmd } // TODO can unsafe be removed? https://github.com/vlang/v/issues/26986
-	c.with_connection(fn [mut c, mut cmd_ref] (mut pc PoolConnection) ! {
-		pc.with_writer(fn [cmd_ref] (mut wr ProtoWriter) ! { // include c.options.write_timeout
-			write_cmd(mut wr, cmd_ref)!
+	c.with_connection(fn [mut c, mut cmd] (mut pc PoolConnection) ! {
+		pc.with_writer(fn [cmd] (mut wr ProtoWriter) ! { // include c.options.write_timeout
+			write_cmd(mut wr, cmd)!
 		})!
-		pc.with_reader(c.cmd_timeout(cmd_ref), cmd_ref.read_reply)! // TODO needs atomic or something
+		pc.with_reader(c.cmd_timeout(cmd), cmd.read_reply)! // TODO needs atomic or something
 	})!
 }
 
