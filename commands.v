@@ -5,6 +5,7 @@ import time
 interface Cmdable {
 	BitMapCmdable
 	GenericCmdable
+	GeospatialCmdable
 	HashCmdable
 	ListCmdable
 	SetCmdable

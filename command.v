@@ -1713,3 +1713,298 @@ fn (mut cmd XpendingExtendedCmd) read_reply(mut rd ProtoReader) ! {
 		}
 	}
 }
+
+pub struct GeoPosCmd {
+	BaseCmd
+mut:
+	val []?GeoPos
+}
+
+fn new_geo_pos_cmd(args ...Value) &GeoPosCmd {
+	return &GeoPosCmd{
+		args: args
+	}
+}
+
+pub fn (cmd &GeoPosCmd) value() []?GeoPos {
+	return cmd.val
+}
+
+pub fn (cmd &GeoPosCmd) result() ![]?GeoPos {
+	error := cmd.error or { return cmd.val }
+	return error
+}
+
+fn (mut cmd GeoPosCmd) read_reply(mut rd ProtoReader) ! {
+	n := rd.read_array_len()!
+	cmd.val = []?GeoPos{len: 0, cap: n}
+	for i := 0; i < n; i++ {
+		rd.read_fixed_array_len(2) or {
+			if is_nil(err) {
+				cmd.val << none
+			}
+			return err
+		}
+
+		longitude := rd.parse_float()!
+		latitude := rd.parse_float()!
+		cmd.val << GeoPos{
+			longitude: longitude
+			latitude:  latitude
+		}
+	}
+}
+
+pub struct GeoLocationCmd {
+	BaseCmd
+mut:
+	q   GeoRadiusQuery
+	val []GeoLocation
+}
+
+fn get_geo_location_args(q GeoRadiusQuery, args ...Value) []Value {
+	mut res := []Value{len: 0, cap: args.len + 6, init: Empty{}}
+	res << args
+	if unit := q.unit {
+		res << string(unit)
+	} else {
+		res << string(unit_m)
+	}
+
+	if q.withcoord {
+		res << 'WITHCOORD'
+	}
+
+	if q.withdist {
+		res << 'WITHDIST'
+	}
+
+	if q.withhash {
+		res << 'WITHHASH'
+	}
+
+	if count := q.count {
+		res << 'COUNT'
+		res << count
+	}
+
+	if sort := q.sort {
+		res << string(sort)
+	}
+
+	if store := q.store {
+		res << 'STORE'
+		res << store
+	}
+
+	if storedist := q.storedist {
+		res << 'STOREDIST'
+		res << storedist
+	}
+
+	return res
+}
+
+fn get_geo_location_len(q GeoRadiusQuery) int {
+	mut len := 0
+	if q.withcoord {
+		len++
+	}
+
+	if q.withdist {
+		len++
+	}
+
+	if q.withhash {
+		len++
+	}
+	return len
+}
+
+fn new_geo_location_cmd(q GeoRadiusQuery, args ...Value) &GeoLocationCmd {
+	return &GeoLocationCmd{
+		args: get_geo_location_args(q, ...args)
+		q:    q
+	}
+}
+
+pub fn (cmd &GeoLocationCmd) value() []GeoLocation {
+	return cmd.val
+}
+
+pub fn (cmd &GeoLocationCmd) result() ![]GeoLocation {
+	error := cmd.error or { return cmd.val }
+	return error
+}
+
+fn (mut cmd GeoLocationCmd) read_reply(mut rd ProtoReader) ! {
+	n := rd.read_array_len()!
+	cmd.val = []GeoLocation{len: 0, cap: n}
+	len := get_geo_location_len(cmd.q)
+	for i := 0; i < n; i++ {
+		if len == 0 {
+			name := rd.read_string()!
+			cmd.val << GeoLocation{
+				name: name
+			}
+			continue
+		}
+
+		rd.read_fixed_array_len(len + 1)!
+		name := rd.read_string()!
+		mut dist := ?f64(none)
+		mut hash := ?i64(none)
+		mut pos := ?GeoPos(none)
+
+		if cmd.q.withdist {
+			dist = rd.parse_float()!
+		}
+
+		if cmd.q.withhash {
+			hash = rd.read_int()!
+		}
+
+		if cmd.q.withcoord {
+			rd.read_fixed_array_len(2)!
+			longitude := rd.parse_float()!
+			latitude := rd.parse_float()!
+			pos = GeoPos{
+				longitude: longitude
+				latitude:  latitude
+			}
+		}
+
+		cmd.val << GeoLocation{
+			name: name
+			dist: dist
+			hash: hash
+			pos:  pos
+		}
+	}
+}
+
+fn get_geosearch_args(q GeoSearchQuery) []Value {
+	mut args := []Value{len: 0, cap: 11, init: Empty{}}
+
+	if member := q.member {
+		args << 'FROMMEMBER'
+		args << member
+	}
+
+	if lonlat := q.lonlat {
+		args << 'FROMLONLAT'
+		args << lonlat.longitude
+		args << lonlat.latitude
+	}
+
+	if radius := q.radius {
+		args << 'BYRADIUS'
+		args << radius
+
+		radius_unit := q.radius_unit or { unit_km }
+		args << string(radius_unit)
+	}
+
+	if box := q.box {
+		args << 'BYBOX'
+		args << box.width
+		args << box.height
+
+		box_unit := q.box_unit or { unit_km }
+		args << box_unit
+	}
+
+	if sort := q.sort {
+		args << sort
+	}
+
+	if count := q.count {
+		args << 'COUNT'
+		args << count
+
+		if q.count_any {
+			args << 'ANY'
+		}
+	}
+
+	return args
+}
+
+pub struct GeoSearchLocationCmd {
+	BaseCmd
+mut:
+	val []GeoLocation
+	q   GeoSearchLocationQuery
+}
+
+fn get_geo_search_location_args(q GeoSearchLocationQuery) []Value {
+	mut args := get_geosearch_args(q.GeoSearchQuery)
+
+	if q.withcoord {
+		args << 'WITHCOORD'
+	}
+
+	if q.withdist {
+		args << 'WITHDIST'
+	}
+
+	if q.withhash {
+		args << 'WITHHASH'
+	}
+
+	return args
+}
+
+fn new_geo_search_location_cmd(q GeoSearchLocationQuery, args ...Value) &GeoSearchLocationCmd {
+	return &GeoSearchLocationCmd{
+		args: args
+		q:    q
+	}
+}
+
+pub fn (cmd &GeoSearchLocationCmd) value() []GeoLocation {
+	return cmd.val
+}
+
+pub fn (cmd &GeoSearchLocationCmd) result() ![]GeoLocation {
+	error := cmd.error or { return cmd.val }
+	return error
+}
+
+fn (mut cmd GeoSearchLocationCmd) read_reply(mut rd ProtoReader) ! {
+	n := rd.read_array_len()!
+	cmd.val = []GeoLocation{len: 0, cap: n}
+	for i := 0; i < n; i++ {
+		rd.read_array_len()!
+
+		name := rd.read_string()!
+		mut dist := ?f64(none)
+		mut hash := ?i64(none)
+		mut pos := ?GeoPos(none)
+
+		if cmd.q.withdist {
+			dist = rd.parse_float()!
+		}
+
+		if cmd.q.withhash {
+			hash = rd.read_int()!
+		}
+
+		if cmd.q.withcoord {
+			rd.read_fixed_array_len(2)!
+			longitude := rd.parse_float()!
+			latitude := rd.parse_float()!
+			pos = GeoPos{
+				longitude: longitude
+				latitude:  latitude
+			}
+		}
+
+		cmd.val << GeoLocation{
+			name: name
+			dist: dist
+			hash: hash
+			pos:  pos
+		}
+	}
+}
