@@ -88,7 +88,7 @@ fn (mut c BaseClient) cmd_timeout(cmd &Cmder) time.Duration {
 
 fn (mut c BaseClient) attempt_process(mut cmd Cmder) ! {
 	c.with_connection(fn [mut c, mut cmd] (mut pc PoolConnection) ! {
-		pc.with_writer(fn [cmd] (mut wr ProtoWriter) ! { // include c.options.write_timeout
+		pc.with_writer(c.options.write_timeout, fn [cmd] (mut wr ProtoWriter) ! {
 			write_cmd(mut wr, cmd)!
 		})!
 		pc.with_reader(c.cmd_timeout(cmd), cmd.read_reply)! // TODO needs atomic or something

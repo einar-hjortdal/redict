@@ -49,6 +49,7 @@ fn (mut pc PoolConnection) with_reader(timeout time.Duration, func fn (mut rd Pr
 	func(mut pc.reader)!
 }
 
-fn (mut pc PoolConnection) with_writer(func fn (mut wr ProtoWriter) !) ! {
+fn (mut pc PoolConnection) with_writer(timeout time.Duration, func fn (mut wr ProtoWriter) !) ! {
+	pc.connection.set_write_deadline(pc.deadline(timeout))
 	func(mut pc.writer)!
 }
