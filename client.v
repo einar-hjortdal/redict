@@ -1,5 +1,6 @@
 module redict
 
+import context
 import net
 import time
 
@@ -99,7 +100,8 @@ fn (mut c BaseClient) process(mut cmd Cmder) ! {
 	mut last_error := ?IError(none)
 	for attempt := 0; attempt <= c.options.max_retries; attempt++ {
 		if attempt > 0 {
-			time.sleep(c.retry_backoff(attempt))
+			mut ctx := context.todo()
+			sleep(mut ctx, c.retry_backoff(attempt))!
 		}
 
 		c.attempt_process(mut cmd) or {

@@ -1,6 +1,6 @@
 module redict
 
-// import context
+import context
 import rand
 import strings
 import time
@@ -124,21 +124,20 @@ fn retry_backoff(retry i32, min_backoff time.Duration, max_backoff time.Duration
 	return backoff
 }
 
-// TODO https://github.com/vlang/v/issues/27914
-// fn sleep(mut ctx context.Context, d time.Duration) ! {
-// 	timer := time.new_timer(d)
-// 	defer { timer.stop() }
-// 	done := ctx.done() // https://github.com/vlang/v/issues/15268
+fn sleep(mut ctx context.Context, d time.Duration) ! {
+	timer := time.new_timer(d)
+	defer { timer.stop() }
+	done := ctx.done() // https://github.com/vlang/v/issues/15268
 
-// 	select {
-// 		_ := <-timer.c {
-// 			return
-// 		}
-// 		_ := <-done {
-// 			return ctx.err()
-// 		}
-// 	}
-// }
+	select {
+		_ := <-timer.c {
+			return
+		}
+		_ := <-done {
+			return ctx.err()
+		}
+	}
+}
 
 fn v_or[T](o ?T, default T) T {
 	v := o or { return default }

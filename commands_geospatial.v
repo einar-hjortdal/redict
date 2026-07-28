@@ -12,6 +12,13 @@ pub type Sort = string
 pub const asc = Sort('ASC')
 pub const desc = Sort('DESC')
 
+pub struct GeospatialItem {
+pub:
+	name      string
+	longitude f64
+	latitude  f64
+}
+
 pub struct GeoPos {
 pub:
 	longitude f64
@@ -71,9 +78,11 @@ pub:
 	storedist bool
 }
 
-// TODO geoadd_nx, geoadd_xx, ch
+// TODO support geoadd ch
 interface GeospatialCmdable {
-	// geoadd(key string, geo_location ...GeoLocation) &IntCmd
+	geoadd(key string, geospatial_items ...GeospatialItem) &IntCmd
+	// geoadd_nx
+	// geoadd_xx
 	geodist(key string, member_1 string, member_2 string, unit ?GeoUnit) &FloatCmd
 	geohash(key string, members ...string) &StringSliceCmd
 	geopos(key string, members ...string) &GeoPosCmd
@@ -86,21 +95,20 @@ interface GeospatialCmdable {
 	geosearchstore(key string, q GeoSearchQuery) &IntCmd
 }
 
-// https://github.com/vlang/v/issues/27952
-// pub fn (c CmdableFn) geoadd(key string, geo_locations ...GeoLocation) &IntCmd {
-// 	mut args := []Value{len: 0, cap: geo_locations.len * 3 + 2, init: Empty{}}
-// 	args << 'GEOADD'
-// 	args << key
-// 	for _, l in geo_locations {
-// 		args << l.longitude
-// 		args << l.latitude
-// 		args << l.name
-// 	}
+pub fn (c CmdableFn) geoadd(key string, geospatial_items ...GeospatialItem) &IntCmd {
+	mut args := []Value{len: 0, cap: geospatial_items.len * 3 + 2, init: Empty{}}
+	args << 'GEOADD'
+	args << key
+	for _, l in geospatial_items {
+		args << l.longitude
+		args << l.latitude
+		args << l.name
+	}
 
-// 	mut cmd := new_int_cmd(...args)
-// 	c(mut cmd) or {}
-// 	return cmd
-// }
+	mut cmd := new_int_cmd(...args)
+	c(mut cmd) or {}
+	return cmd
+}
 
 pub fn (c CmdableFn) geodist(key string, member_1 string, member_2 string, unit ?GeoUnit) &FloatCmd {
 	mut args := []Value{len: 0, cap: 5, init: Empty{}}
