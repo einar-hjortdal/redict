@@ -95,8 +95,8 @@ interface StreamCmdable {
 	xpending_extended(a XpendingExtendedArgs) &XpendingExtendedCmd
 	xrange(key string, start string, stop string) &XmessageSliceCmd
 	xrange_count(key string, start string, stop string, count i64) &XmessageSliceCmd
-	// xread(a XreadArgs) &XstreamSliceCmd
-	// xreadgroup(a XreadgroupArgs) &XstreamSliceCmd
+	xread(a XreadArgs) &XstreamSliceCmd
+	xreadgroup(a XreadgroupArgs) &XstreamSliceCmd
 	xrevrange(key string, start string, stop string) &XmessageSliceCmd
 	xrevrange_count(key string, start string, stop string, count i64) &XmessageSliceCmd
 	xtrim_maxlen(key string, maxlen i64) &IntCmd

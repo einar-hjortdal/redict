@@ -988,9 +988,30 @@ pub fn (cmd &XstreamSliceCmd) result() ![]Xstream {
 	return error
 }
 
-fn (mut cmd XstreamSliceCmd) read_reply(mut _ ProtoReader) ! {
-	// t := rd.peek_reply_type()!
-	return new_redict_error('Not implemented: need to be able to tell maps and arrays apart for this command.')
+fn (mut cmd XstreamSliceCmd) read_reply(mut rd ProtoReader) ! {
+	t := rd.peek_reply_type()!
+	is_map := t.str() == resp_map
+	mut n := 0
+	if is_map {
+		n = rd.read_map_len()!
+	} else {
+		n = rd.read_array_len()!
+	}
+
+	cmd.val = []Xstream{len: 0, cap: n}
+	for i := 0; i < n; i++ {
+		if !is_map {
+			rd.read_fixed_array_len(2)!
+		}
+
+		stream := rd.read_string()!
+		messages := read_xmessage_slice(mut rd)!
+
+		cmd.val << Xstream{
+			stream:   stream
+			messages: messages
+		}
+	}
 }
 
 pub struct XautoclaimCmd {
